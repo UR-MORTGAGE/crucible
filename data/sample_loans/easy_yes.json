@@ -1,0 +1,12 @@
+{
+  "loan_id": "CR-1001",
+  "loan_program": "conventional",
+  "occupancy": "primary",
+  "property_value": 500000,
+  "loan_amount": 400000,
+  "monthly_income": 12000,
+  "monthly_debts": 1500,
+  "proposed_housing_payment": 2200,
+  "credit_score": 760,
+  "reserves_liquid": 20000
+}

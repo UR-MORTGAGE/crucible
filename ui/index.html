@@ -1,0 +1,1091 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crucible — the loan on trial</title>
+<!-- Distinctive faces (with graceful system fallbacks if offline). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#101118; --ink-2:#15171F; --panel:#191C26; --panel-2:#1F2330; --raise:#242838;
+    --line:rgba(168,178,208,.12); --line-2:rgba(168,178,208,.22); --line-3:rgba(168,178,208,.34);
+    --paper:#ECEAE1; --muted:#9AA0B4; --faint:#6A7085;
+    --pros:#E5573F; --pros-bg:rgba(229,87,63,.09); --pros-l:rgba(229,87,63,.45);
+    --def:#3FBFAF;  --def-bg:rgba(63,191,175,.09);  --def-l:rgba(63,191,175,.45);
+    --bench:#D8A24A; --bench-2:#F0C878; --bench-bg:rgba(216,162,74,.10);
+    --serif:"Fraunces",Georgia,"Times New Roman",serif;
+    --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,"Cascadia Code",Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--ink); color:var(--paper); font-family:var(--sans); font-size:14.5px;
+    line-height:1.55; -webkit-font-smoothing:antialiased; min-height:100vh; overflow-x:hidden}
+  #ambient{position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.5}
+  .grain{position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.05; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .app{position:relative; z-index:2}
+
+  ::selection{background:rgba(216,162,74,.28)}
+  a{color:var(--bench-2)}
+  :focus-visible{outline:2px solid var(--bench); outline-offset:2px; border-radius:4px}
+
+  /* ---------- masthead ---------- */
+  .masthead{border-bottom:1px solid var(--line-2); background:linear-gradient(180deg,rgba(16,17,24,.92),rgba(16,17,24,.72));
+    backdrop-filter:blur(8px); position:sticky; top:0; z-index:20}
+  .mast-in{max-width:1440px; margin:0 auto; padding:13px 22px; display:flex; align-items:center; gap:20px; flex-wrap:wrap}
+  .brand{display:flex; align-items:baseline; gap:12px}
+  .brand .glyph{color:var(--bench); font-size:1.3rem}
+  .brand h1{font-family:var(--serif); font-weight:900; font-size:1.5rem; letter-spacing:.01em; margin:0;
+    font-optical-sizing:auto}
+  .brand .tag{font-family:var(--mono); font-size:.64rem; letter-spacing:.24em; text-transform:uppercase; color:var(--faint)}
+  .thesis{font-family:var(--serif); font-style:italic; font-size:.98rem; color:var(--muted); flex:1 1 280px; min-width:200px}
+  .thesis b{color:var(--paper); font-style:normal; font-weight:600}
+  .tools{display:flex; align-items:center; gap:7px}
+  .tbtn{font-family:var(--mono); font-size:.68rem; letter-spacing:.05em; color:var(--muted); cursor:pointer;
+    background:var(--panel); border:1px solid var(--line-2); border-radius:7px; padding:8px 11px; display:flex; align-items:center; gap:6px; transition:.14s}
+  .tbtn:hover{color:var(--paper); border-color:var(--line-3); background:var(--panel-2)}
+  .tbtn kbd{font-family:var(--mono); font-size:.6rem; color:var(--faint); border:1px solid var(--line-2); border-radius:4px; padding:0 4px}
+  .status{font-family:var(--mono); font-size:.66rem; color:var(--faint); display:flex; align-items:center; gap:7px; white-space:nowrap}
+  .status .d{width:8px; height:8px; border-radius:50%; background:var(--faint); box-shadow:0 0 0 0 currentColor}
+  .status.live{color:var(--def)} .status.live .d{background:var(--def); animation:pulse 2s infinite}
+  .status.demo{color:var(--bench)} .status.demo .d{background:var(--bench)}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(63,191,175,.5)}70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
+
+  /* ---------- workspace grid ---------- */
+  .workspace{max-width:1440px; margin:0 auto; padding:18px 22px 60px;
+    display:grid; grid-template-columns:325px minmax(0,1fr) 300px; gap:18px; align-items:start}
+  .col-title{font-family:var(--mono); font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; color:var(--faint);
+    display:flex; align-items:center; gap:9px; margin:0 0 12px}
+  .col-title::after{content:""; flex:1; height:1px; background:var(--line)}
+
+  /* ---------- docket (left) ---------- */
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:13px}
+  .docket .personas{display:flex; flex-direction:column; gap:8px; margin-bottom:20px}
+  .persona{display:flex; gap:12px; align-items:center; padding:11px 12px; cursor:pointer; text-align:left; width:100%;
+    background:var(--panel); border:1px solid var(--line); border-radius:11px; color:inherit; transition:.14s}
+  .persona:hover{border-color:var(--line-3); background:var(--panel-2)}
+  .persona[aria-pressed="true"]{border-color:var(--bench); background:var(--bench-bg)}
+  .avatar{width:38px; height:38px; border-radius:10px; flex:none; display:grid; place-items:center;
+    font-family:var(--serif); font-weight:600; font-size:.95rem; color:var(--ink); background:linear-gradient(135deg,var(--bench-2),var(--bench))}
+  .persona .nm{font-weight:600; font-size:.9rem}
+  .persona .st{color:var(--muted); font-size:.76rem; line-height:1.35}
+  .expect{font-family:var(--mono); font-size:.56rem; letter-spacing:.08em; padding:2px 6px; border-radius:5px; border:1px solid var(--line-2); color:var(--faint); white-space:nowrap; align-self:flex-start; margin-top:2px}
+
+  .filecard{padding:15px}
+  .filecard h3{font-family:var(--mono); font-size:.62rem; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); margin:0 0 12px}
+  .field{margin-bottom:12px}
+  .field label{display:flex; justify-content:space-between; font-size:.76rem; color:var(--muted); margin-bottom:5px}
+  .field label b{font-family:var(--mono); color:var(--paper); font-variant-numeric:tabular-nums}
+  .field input[type=range]{width:100%; accent-color:var(--bench); height:4px}
+  .field .num{width:100%; background:var(--ink-2); border:1px solid var(--line-2); color:var(--paper);
+    border-radius:7px; padding:7px 9px; font-family:var(--mono); font-size:.82rem}
+  .seg{display:flex; gap:5px}
+  .seg button{flex:1; font-family:var(--mono); font-size:.7rem; padding:7px 0; cursor:pointer; color:var(--muted);
+    background:var(--ink-2); border:1px solid var(--line-2); border-radius:7px; transition:.14s}
+  .seg button[aria-pressed="true"]{color:var(--ink); background:var(--bench); border-color:var(--bench); font-weight:600}
+
+  .runbtn{width:100%; margin-top:6px; font-family:var(--sans); font-weight:700; font-size:.92rem; cursor:pointer;
+    color:var(--ink); background:linear-gradient(135deg,var(--bench-2),var(--bench)); border:0; border-radius:10px; padding:13px; transition:.14s; letter-spacing:.01em}
+  .runbtn:hover{filter:brightness(1.06)} .runbtn:active{transform:translateY(1px)} .runbtn:disabled{opacity:.55; cursor:progress}
+  .diff{margin-top:11px; font-size:.78rem; border-left:2px solid var(--bench); background:var(--bench-bg);
+    padding:8px 11px; border-radius:0 8px 8px 0; display:none}
+  .diff.show{display:block; animation:slidein .3s}
+  @keyframes slidein{from{opacity:0; transform:translateX(-6px)}to{opacity:1}}
+
+  .source{margin-bottom:15px}
+  .src-panel{margin-bottom:16px}
+  .hint2{font-size:.76rem; color:var(--faint); margin-bottom:10px; line-height:1.4}
+  .sfrecs{display:flex; flex-direction:column; gap:8px}
+  .sfrec{display:flex; gap:11px; align-items:center; padding:10px 12px; cursor:pointer; width:100%; text-align:left;
+    background:var(--panel); border:1px solid var(--line); border-radius:11px; color:inherit; transition:.14s}
+  .sfrec:hover{border-color:var(--line-3); background:var(--panel-2)}
+  .sfrec .nm{font-weight:600; font-size:.88rem}
+  .sfrec .oid{font-family:var(--mono); font-size:.62rem; color:var(--faint); margin-top:2px}
+  .sfrec .kbd{color:var(--faint); font-family:var(--mono); font-size:.56rem}
+  .synced{color:var(--def); font-size:.68rem}
+  .drop{display:block; border:1.5px dashed var(--line-3); border-radius:12px; padding:26px 16px; text-align:center; cursor:pointer; transition:.15s; color:var(--muted)}
+  .drop:hover,.drop.over{border-color:var(--bench); background:var(--bench-bg); color:var(--paper)}
+  .drop .dz small{color:var(--faint); font-size:.72rem}
+  .samp{display:inline-block; margin-top:11px; font-family:var(--mono); font-size:.68rem; color:var(--bench-2); cursor:pointer}
+  .fhead{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:12px}
+  .fb{font-family:var(--serif); font-size:1.08rem; font-weight:600}
+  .fmeta{font-family:var(--mono); font-size:.6rem; color:var(--faint); margin-top:3px}
+  .ovr{font-family:var(--mono); font-size:.64rem; color:var(--muted); background:var(--ink-2); border:1px solid var(--line-2); border-radius:7px; padding:6px 10px; cursor:pointer; white-space:nowrap}
+  .ovr[aria-pressed="true"]{color:var(--ink); background:var(--bench); border-color:var(--bench); font-weight:600}
+  .roview{display:grid; grid-template-columns:1fr 1fr; gap:7px}
+  .rocell{background:var(--ink-2); border:1px solid var(--line); border-radius:8px; padding:8px 10px; display:flex; flex-direction:column; gap:3px}
+  .rocell span{font-family:var(--mono); font-size:.55rem; letter-spacing:.1em; text-transform:uppercase; color:var(--faint)}
+  .rocell b{font-family:var(--mono); font-size:.82rem; font-variant-numeric:tabular-nums}
+  #program{margin-bottom:12px; transition:opacity .15s}
+
+  /* ---------- the well (center) ---------- */
+  .metrics{display:grid; grid-template-columns:repeat(4,1fr); gap:9px; margin-bottom:15px}
+  .mt{background:var(--panel); border:1px solid var(--line); border-radius:11px; padding:11px 13px; position:relative; overflow:hidden}
+  .mt span{display:block; font-family:var(--mono); font-size:.56rem; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); margin-bottom:5px}
+  .mt b{font-family:var(--mono); font-size:1.32rem; font-weight:600; font-variant-numeric:tabular-nums}
+  .mt small{font-size:.66rem; color:var(--faint); margin-left:3px}
+  .mt.bad{border-color:var(--pros-l)} .mt.bad b{color:var(--pros)}
+  .mt.ok b{color:var(--def)}
+  .mt .bar{position:absolute; left:0; bottom:0; height:3px; background:currentColor; opacity:.5; transition:width .6s}
+
+  .chamber{position:relative; display:grid; grid-template-columns:1fr 1fr; gap:20px}
+  .tendrils{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:0; overflow:visible}
+  .bench{position:relative; z-index:1; border:1px solid var(--line-2); border-radius:14px; padding:15px 16px; min-height:300px; display:flex; flex-direction:column}
+  .bench.pros{border-color:var(--pros-l); background:linear-gradient(180deg,var(--pros-bg),transparent 55%)}
+  .bench.def{border-color:var(--def-l); background:linear-gradient(180deg,var(--def-bg),transparent 55%)}
+  .bench header{display:flex; align-items:center; justify-content:space-between; margin-bottom:4px}
+  .bench h2{font-family:var(--serif); font-size:1.12rem; font-weight:600; margin:0; display:flex; align-items:center; gap:9px}
+  .role{font-family:var(--mono); font-size:.58rem; letter-spacing:.18em; text-transform:uppercase}
+  .pros .role{color:var(--pros)} .def .role{color:var(--def)}
+  .bench .lede{color:var(--muted); font-size:.78rem; margin:0 0 12px; min-height:2.2em}
+  .rows{display:flex; flex-direction:column; gap:10px; flex:1}
+
+  .item{border:1px solid var(--line); border-radius:10px; background:rgba(21,23,31,.82); padding:11px 12px;
+    animation:pop .4s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes pop{from{opacity:0; transform:translateY(10px) scale(.99)}to{opacity:1; transform:none}}
+  .item.charge{border-left:3px solid var(--pros)}
+  .item.defense{border-left:3px solid var(--def)}
+  .item.defense.dead{border-left-color:var(--pros)}
+  .item .t{font-size:.87rem; line-height:1.4}
+  .item .meta{margin-top:8px; display:flex; gap:7px; flex-wrap:wrap; align-items:center; font-family:var(--mono); font-size:.63rem}
+  .sev{display:inline-flex; align-items:center; gap:5px; padding:2px 7px; border-radius:5px; border:1px solid; letter-spacing:.08em; text-transform:uppercase}
+  .sev.fatal{color:var(--pros); border-color:var(--pros-l)} .sev.fatal .dot{animation:blink .9s steps(2) infinite}
+  .sev.high{color:#E7823F; border-color:rgba(231,130,63,.4)}
+  .sev.medium{color:var(--bench-2); border-color:rgba(216,162,74,.4)}
+  .sev.low{color:var(--muted); border-color:var(--line-2)}
+  .dot{width:6px; height:6px; border-radius:50%; background:currentColor; display:inline-block}
+  @keyframes blink{50%{opacity:.25}}
+  .pill{padding:2px 7px; border-radius:5px; border:1px solid var(--line-2); color:var(--muted); letter-spacing:.05em}
+  .pill.low{color:var(--def); border-color:var(--def-l)} .pill.medium{color:var(--bench-2)} .pill.high{color:var(--pros)}
+  .cite{color:var(--faint); cursor:help; border-bottom:1px dotted var(--faint)}
+  .lane{padding:2px 6px; border-radius:5px; font-size:.58rem; letter-spacing:.1em}
+  .lane.local{color:var(--def); background:var(--def-bg)} .lane.cloud{color:var(--pros); background:var(--pros-bg)}
+  .thinking{font-family:var(--mono); font-size:.74rem; color:var(--faint); display:flex; align-items:center; gap:9px}
+  .thinking .dot{animation:blink 1s steps(2) infinite}
+  .clean{display:flex; align-items:center; gap:10px; color:var(--def); font-size:.9rem; padding:8px 0}
+  .clean .ring{width:26px; height:26px; border-radius:50%; border:2px solid var(--def); display:grid; place-items:center; animation:pop .5s}
+
+  /* ---------- verdict ---------- */
+  .verdict{margin-top:16px; border:1px solid var(--bench); border-radius:16px; overflow:hidden; opacity:0}
+  .verdict.show{animation:pop .5s both}
+  .vhead{padding:18px 22px; display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+    background:linear-gradient(180deg,var(--bench-bg),transparent); border-bottom:1px solid var(--line)}
+  .stamp{font-family:var(--mono); font-weight:600; letter-spacing:.12em; font-size:.86rem; padding:10px 16px; border-radius:9px; border:2px solid; position:relative}
+  .stamp.now{color:var(--def); border-color:var(--def)} .stamp.path{color:var(--bench); border-color:var(--bench)} .stamp.not{color:var(--pros); border-color:var(--pros)}
+  .stamp.hit{animation:stamp .5s cubic-bezier(.3,1.6,.5,1)}
+  @keyframes stamp{0%{transform:scale(2.4) rotate(-9deg); opacity:0}60%{transform:scale(.94) rotate(-4deg); opacity:1}100%{transform:none}}
+  .vhead .who{font-family:var(--mono); font-size:.58rem; letter-spacing:.18em; text-transform:uppercase; color:var(--bench)}
+  .vhead .sum{font-family:var(--serif); font-size:1.12rem; color:var(--paper)}
+  .vbody{padding:8px 22px 20px}
+  .step{display:flex; gap:14px; padding:14px 0; border-top:1px solid var(--line)}
+  .rank{font-family:var(--serif); font-weight:600; color:var(--bench); font-size:1.25rem; min-width:26px; text-align:center}
+  .step .a{font-size:.92rem; font-weight:600}
+  .step .w{color:var(--muted); font-size:.8rem; margin-top:3px}
+  .step .m{margin-top:7px; display:flex; gap:8px; flex-wrap:wrap; font-family:var(--mono); font-size:.63rem}
+  .open{border-top:1px solid var(--line); padding-top:13px; margin-top:3px}
+  .open .lbl{font-family:var(--mono); font-size:.6rem; letter-spacing:.14em; text-transform:uppercase; color:var(--pros)}
+  .open .r{font-size:.88rem; margin-top:5px}
+
+  /* ---------- instruments (right) ---------- */
+  .inst{padding:15px; margin-bottom:16px}
+  .inst h3{font-family:var(--mono); font-size:.62rem; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); margin:0 0 13px}
+  .savings{font-family:var(--serif); font-size:2.5rem; font-weight:900; line-height:1; color:var(--def)}
+  .savings small{font-family:var(--mono); font-size:.62rem; letter-spacing:.1em; color:var(--faint); display:block; text-transform:uppercase; margin-top:6px}
+  .cmp{margin-top:15px; display:flex; flex-direction:column; gap:10px}
+  .cmp .row .l{display:flex; justify-content:space-between; font-family:var(--mono); font-size:.68rem; margin-bottom:4px}
+  .cmp .row .l .k{color:var(--muted)} .cmp .row .l .v{font-variant-numeric:tabular-nums}
+  .track{height:8px; border-radius:5px; background:var(--ink-2); border:1px solid var(--line); overflow:hidden}
+  .fill{height:100%; width:0; transition:width .9s ease}
+  .fill.cloud{background:linear-gradient(90deg,var(--pros),#f07a63)}
+  .fill.hybrid{background:linear-gradient(90deg,var(--def),#63d6c6)}
+  .proj{margin-top:13px; font-family:var(--mono); font-size:.66rem; color:var(--muted); border-top:1px solid var(--line); padding-top:11px}
+  .proj b{color:var(--def)}
+
+  .trace{display:flex; flex-direction:column; gap:7px}
+  .trrow{display:flex; align-items:center; gap:9px; font-family:var(--mono); font-size:.68rem}
+  .trrow .s{flex:1; color:var(--muted)}
+  .esc{color:var(--pros); font-size:.58rem}
+  .ledger{font-family:var(--mono); font-size:.63rem; color:var(--faint); line-height:1.7}
+  .ledger b{color:var(--muted)}
+  .sharecard{padding:14px; background:linear-gradient(150deg,var(--panel-2),var(--panel)); border:1px solid var(--line-2)}
+  .sharecard .b{font-family:var(--serif); font-size:1.05rem}
+  .sharecard .m{font-family:var(--mono); font-size:.62rem; color:var(--muted); margin-top:5px}
+
+  /* ---------- workfile ---------- */
+  .workfile{margin-top:16px; display:none}
+  .workfile.show{display:block; animation:pop .4s}
+  .wf-head{display:flex; align-items:baseline; gap:14px; margin-bottom:10px; flex-wrap:wrap}
+  .wf-head h2{font-family:var(--serif); font-size:1.15rem; font-weight:700; margin:0}
+  .wf-head .cnt{font-family:var(--mono); font-size:.68rem; color:var(--muted)}
+  .wf-head .cnt b{color:var(--def)}
+  .condboard{border:1px solid var(--line-2); border-radius:13px; background:var(--panel); overflow:hidden}
+  .csec-h{display:flex; justify-content:space-between; align-items:center; padding:9px 14px; background:var(--ink-2);
+    font-family:var(--mono); font-size:.6rem; letter-spacing:.16em; text-transform:uppercase; color:var(--bench)}
+  .csec-h span{color:var(--faint); letter-spacing:.06em}
+  .crow{display:flex; gap:10px; align-items:flex-start; padding:8px 14px; border-top:1px solid var(--line); font-size:.8rem}
+  .crow .code{font-family:var(--mono); color:var(--bench-2); min-width:38px}
+  .crow .cat{font-family:var(--mono); font-size:.6rem; color:var(--faint); min-width:74px; padding-top:2px; text-transform:uppercase; letter-spacing:.06em}
+  .crow .d{flex:1; color:var(--muted); line-height:1.35; cursor:default}
+  .cst{font-family:var(--mono); font-size:.6rem; padding:2px 8px; border-radius:5px; border:1px solid; white-space:nowrap}
+  .cst.open{color:var(--pros); border-color:var(--pros-l)}
+  .cst.clear{color:var(--def); border-color:var(--def-l)}
+  .crow.flash{animation:clearflash 1.4s}
+  @keyframes clearflash{0%{background:rgba(63,191,175,.3)}100%{background:transparent}}
+  .wf-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px}
+  .wf-card{border:1px solid var(--line-2); border-radius:13px; background:var(--panel); padding:14px 16px}
+  .wf-card h3{font-family:var(--mono); font-size:.62rem; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); margin:0 0 10px}
+  .drop2{display:block; border:1.5px dashed var(--line-3); border-radius:10px; padding:14px; text-align:center; cursor:pointer; color:var(--muted); font-size:.8rem; transition:.15s}
+  .drop2:hover,.drop2.over{border-color:var(--def); background:var(--def-bg); color:var(--paper)}
+  .samples{display:flex; gap:6px; flex-wrap:wrap; margin-top:9px}
+  .samples button{font-family:var(--mono); font-size:.62rem; color:var(--muted); background:var(--ink-2); border:1px solid var(--line-2); border-radius:6px; padding:5px 8px; cursor:pointer}
+  .samples button:hover:not(:disabled){color:var(--paper); border-color:var(--def-l)}
+  .samples button:disabled{opacity:.45; cursor:not-allowed}
+  .wlog{margin-top:10px; display:flex; flex-direction:column; gap:6px; max-height:160px; overflow-y:auto}
+  .wlog .li{font-size:.74rem; color:var(--muted); border-left:2px solid var(--def); padding:4px 9px; background:var(--def-bg); border-radius:0 6px 6px 0; animation:pop .3s}
+  .wlog .li b{color:var(--paper)}
+  .wlog .li.warn{border-left-color:var(--pros); background:var(--pros-bg)}
+  .wbtn{font-family:var(--sans); font-weight:600; font-size:.8rem; cursor:pointer; color:var(--paper);
+    background:var(--panel-2); border:1px solid var(--line-2); border-radius:8px; padding:8px 13px; transition:.14s}
+  .wbtn:hover:not(:disabled){border-color:var(--bench)}
+  .wbtn:disabled{opacity:.45; cursor:not-allowed}
+  .oitem{display:flex; gap:8px; align-items:center; font-size:.74rem; padding:6px 0; border-top:1px solid var(--line)}
+  .oitem .oc{font-family:var(--mono); color:var(--bench-2); min-width:36px}
+  .oitem .role{color:var(--paper)}
+  .oitem .ch{font-family:var(--mono); font-size:.6rem; color:var(--faint)}
+  .oitem .st{margin-left:auto; font-family:var(--mono); font-size:.58rem; color:var(--def)}
+  .ausline{display:flex; align-items:center; gap:10px; margin:8px 0 4px; flex-wrap:wrap}
+  .ausbadge{font-family:var(--mono); font-weight:600; font-size:.72rem; padding:6px 10px; border-radius:7px; border:1.5px solid}
+  .ausbadge.ok{color:var(--def); border-color:var(--def-l); background:var(--def-bg)}
+  .ausbadge.no{color:var(--pros); border-color:var(--pros-l); background:var(--pros-bg)}
+  .simtag{font-family:var(--mono); font-size:.56rem; color:var(--faint); border:1px solid var(--line-2); border-radius:5px; padding:2px 6px}
+  .scorechip{font-family:var(--mono); font-size:.7rem; color:var(--bench-2); border:1px solid var(--line-2); border-radius:7px; padding:5px 9px; margin-left:auto}
+  .restruct{border-top:1px solid var(--line); padding:12px 22px 16px}
+  .restruct .lbl2{font-family:var(--mono); font-size:.6rem; letter-spacing:.14em; text-transform:uppercase; color:var(--def); margin-bottom:8px}
+  .rmove{font-size:.85rem; padding:5px 0; color:var(--paper)}
+  .rmove .ft{font-family:var(--mono); font-size:.68rem; color:var(--muted)}
+  .rmove .coc{font-family:var(--mono); font-size:.56rem; color:var(--bench-2); border:1px solid var(--line-2); border-radius:4px; padding:1px 5px; margin-left:6px}
+  @media(max-width:720px){.wf-grid{grid-template-columns:1fr}}
+
+  /* ---------- help + toast ---------- */
+  .overlay{position:fixed; inset:0; z-index:60; background:rgba(10,11,16,.8); backdrop-filter:blur(5px);
+    display:none; place-items:center; padding:20px}
+  .overlay.show{display:grid}
+  .sheet{max-width:520px; width:100%; background:var(--panel); border:1px solid var(--line-2); border-radius:16px; padding:26px}
+  .sheet h2{font-family:var(--serif); font-size:1.5rem; margin:0 0 4px}
+  .sheet p{color:var(--muted); margin:0 0 18px; font-size:.86rem}
+  .keys{display:grid; grid-template-columns:auto 1fr; gap:9px 16px; font-size:.85rem}
+  .keys kbd{font-family:var(--mono); font-size:.72rem; background:var(--ink-2); border:1px solid var(--line-2); border-radius:6px; padding:3px 8px; justify-self:start}
+  .toast{position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px); z-index:70;
+    background:var(--raise); border:1px solid var(--line-3); border-radius:10px; padding:11px 18px; font-size:.84rem;
+    opacity:0; transition:.25s; pointer-events:none; box-shadow:0 12px 40px rgba(0,0,0,.5)}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+  @media(max-width:1100px){ .workspace{grid-template-columns:1fr} .instruments{order:3} }
+  @media(max-width:620px){ .metrics{grid-template-columns:repeat(2,1fr)} .chamber{grid-template-columns:1fr} .tendrils{display:none} }
+  @media(prefers-reduced-motion:reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} #ambient{display:none} }
+</style>
+</head>
+<body>
+<canvas id="ambient"></canvas>
+<div class="grain"></div>
+<div class="app">
+
+  <header class="masthead">
+    <div class="mast-in">
+      <div class="brand">
+        <span class="glyph">◭</span>
+        <div>
+          <h1>Crucible</h1>
+          <div class="tag">the loan on trial</div>
+        </div>
+      </div>
+      <p class="thesis">Every lender's AI says <b>no</b>. Crucible shows the borrower the <b>path to yes</b>.</p>
+      <div class="tools">
+        <button class="tbtn" id="demoBtn" title="Auto-play the pitch">▷ Demo <kbd>D</kbd></button>
+        <button class="tbtn" id="exportBtn" title="Export compliance artifacts">⤓ Export <kbd>E</kbd></button>
+        <button class="tbtn" id="soundBtn" title="Toggle sound">♪ <kbd>S</kbd></button>
+        <button class="tbtn" id="helpBtn" title="Shortcuts">? </button>
+        <div class="status" id="status"><span class="d"></span><span id="statusText">ready</span></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="workspace">
+
+    <!-- DOCKET -->
+    <aside class="docket">
+      <p class="col-title">Intake</p>
+      <div class="seg source" id="source">
+        <button data-s="salesforce" aria-pressed="true">Salesforce</button>
+        <button data-s="upload">Upload</button>
+        <button data-s="manual">Manual</button>
+      </div>
+
+      <div class="src-panel" id="src-salesforce">
+        <div class="hint2">Records synced from your underwrite LWC. Click to pull &amp; underwrite.</div>
+        <div class="sfrecs" id="sfrecs"></div>
+      </div>
+      <div class="src-panel" id="src-upload" hidden>
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept=".json,application/json" hidden>
+          <div class="dz">⤒ Drop a loan file (1003 JSON)<br><small>or click to browse</small></div>
+        </label>
+        <a class="samp" id="sampleLink" href="#">↓ download a sample loan file</a>
+      </div>
+      <div class="src-panel" id="src-manual" hidden>
+        <div class="hint2">Hand-key a file for a what-if. This is the underwriter override.</div>
+      </div>
+
+      <div class="card filecard" id="filecard" hidden>
+        <div class="fhead">
+          <div><div class="fb" id="fbName">—</div><div class="fmeta" id="fmeta"></div></div>
+          <button class="ovr" id="ovr" aria-pressed="false" title="Simulate a what-if on this file">⚙ Override</button>
+        </div>
+        <div class="seg" id="program"><button data-p="conventional" aria-pressed="true">Conventional</button><button data-p="fha">FHA</button></div>
+        <div id="fields"></div>
+        <button class="runbtn" id="runBtn">Convene the tribunal ▸</button>
+        <div class="diff" id="diff"></div>
+      </div>
+    </aside>
+
+    <!-- THE WELL -->
+    <main class="well">
+      <div class="metrics" id="metrics"></div>
+      <div class="chamber">
+        <svg class="tendrils" id="tendrils"></svg>
+        <section class="bench pros">
+          <header><h2><span class="role">◤ Prosecution</span></h2></header>
+          <p class="lede">The Adversary. Every charge grounded in the file and cited — no citation, no charge.</p>
+          <div class="rows" id="prosRows"></div>
+        </section>
+        <section class="bench def">
+          <header><h2><span class="role">Defense ◥</span></h2></header>
+          <p class="lede">The Advocate. For each charge, the strongest guideline-valid path to yes.</p>
+          <div class="rows" id="defRows"></div>
+        </section>
+      </div>
+
+      <div class="verdict" id="verdict">
+        <div class="vhead">
+          <span class="who">▼ The bench rules</span>
+          <span class="stamp" id="stamp"></span>
+          <span class="sum" id="sum"></span>
+          <span class="scorechip" id="scoreChip" hidden></span>
+        </div>
+        <div class="vbody" id="vbody"></div>
+        <div class="restruct" id="restruct" hidden></div>
+      </div>
+
+      <section class="workfile" id="workfile">
+        <div class="wf-head">
+          <h2>Workfile</h2>
+          <span class="cnt" id="wfCount"></span>
+          <span style="flex:1"></span>
+          <span class="simtag" id="wfMode"></span>
+        </div>
+        <div class="condboard" id="condBoard"></div>
+        <div class="wf-grid">
+          <div class="wf-card">
+            <h3>Incoming documents · the agent reads &amp; clears</h3>
+            <label class="drop2" id="docDrop">Drop a document (txt / json) or click to browse<input type="file" id="docFile" accept=".txt,.json,.md" hidden></label>
+            <div class="samples" id="samples">
+              <button data-s="bank">📄 Bank statement</button>
+              <button data-s="hoi">📄 HOI declarations</button>
+              <button data-s="lox">📄 Borrower LOX</button>
+              <button data-s="title">📄 Title report</button>
+            </div>
+            <div class="wlog" id="docLog"></div>
+          </div>
+          <div class="wf-card">
+            <h3>Autonomous outreach &amp; AUS</h3>
+            <div style="display:flex; gap:8px; flex-wrap:wrap">
+              <button class="wbtn" id="outreachBtn">☎ Work the open conditions</button>
+              <button class="wbtn" id="ausBtn">⇪ Submit to AUS</button>
+            </div>
+            <div class="ausline" id="ausBox" hidden></div>
+            <div id="outreachList"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- INSTRUMENTS -->
+    <aside class="instruments">
+      <p class="col-title">Instruments</p>
+      <div class="card inst">
+        <h3>Router · cost on AMD</h3>
+        <div class="savings" id="savePct">—<small>cheaper than all-frontier</small></div>
+        <div class="cmp" id="cmp"></div>
+        <div class="proj" id="proj"></div>
+      </div>
+      <div class="card inst">
+        <h3>Routing trace</h3>
+        <div class="trace" id="trace"><div class="ledger">Run to populate the trace.</div></div>
+      </div>
+      <div class="card inst">
+        <h3>Audit ledger</h3>
+        <div class="ledger" id="ledger">No run yet.</div>
+      </div>
+      <div class="card inst" id="learnCard">
+        <h3>Learning · every file makes it smarter</h3>
+        <div class="ledger" id="learnBox">No data yet.</div>
+      </div>
+      <div class="card inst sharecard" id="share" style="display:none">
+        <div class="b" id="shareB"></div>
+        <div class="m" id="shareM"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div class="overlay" id="help">
+  <div class="sheet">
+    <h2>Crucible</h2>
+    <p>Adversarial, transparent underwriting. Two AIs argue a real loan; the bench rules on the cited record.</p>
+    <div class="keys">
+      <kbd>1</kbd><span>–<kbd>4</kbd> load a borrower</span>
+      <kbd>R</kbd><span>convene the tribunal</span>
+      <kbd>D</kbd><span>auto-play the demo</span>
+      <kbd>O</kbd><span>work the open conditions (outreach)</span>
+      <kbd>A</kbd><span>submit to AUS</span>
+      <kbd>E</kbd><span>export compliance artifacts</span>
+      <kbd>S</kbd><span>toggle sound</span>
+      <kbd>Esc</kbd><span>close</span>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const el=(t,c,h)=>{const e=document.createElement(t); if(c)e.className=c; if(h!=null)e.innerHTML=h; return e;};
+const REDUCED=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const sleep=ms=>new Promise(r=>setTimeout(r,REDUCED?0:ms));
+const pct=x=>(x*100).toFixed(1)+"%";
+const money=x=>"$"+x.toFixed(6);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+// ---- guideline mirror (for live preview + offline fallback; matches the Python engine) ----
+const RULES={
+  conventional:{max_dti:.50,max_ltv:.97,min_credit:620,min_res:2,name:"conventional",
+    c:{dti:{source:"Fannie Mae Selling Guide B3-6-02",quote:"The maximum allowable DTI ratio is 50%."},
+       ltv:{source:"Fannie Mae Eligibility Matrix",quote:"Maximum LTV for a 1-unit principal residence purchase is 97%."},
+       fico:{source:"Fannie Mae Selling Guide B3-5.1-01",quote:"The minimum representative credit score is 620."},
+       res:{source:"Fannie Mae Selling Guide B3-4.1-01",quote:"Reserves are measured in months of the housing payment."}}},
+  fha:{max_dti:.5699,max_ltv:.965,min_credit:580,min_res:0,name:"FHA",
+    c:{dti:{source:"HUD Handbook 4000.1 II.A.5",quote:"Ratios may exceed 43% with documented compensating factors, up to 56.99%."},
+       ltv:{source:"HUD Handbook 4000.1 II.A.2",quote:"Maximum LTV is 96.5% for a minimum decision credit score of 580."},
+       fico:{source:"HUD Handbook 4000.1 II.A.1",quote:"A minimum decision credit score of 580 is eligible for maximum financing."},
+       res:{source:"HUD Handbook 4000.1 II.A.4",quote:"Reserves are not required for 1-2 unit properties."}}},
+};
+const FHA=RULES.fha;
+const metricsOf=L=>({dti:(L.monthly_debts+L.proposed_housing_payment)/L.monthly_income,
+  ltv:L.loan_amount/L.property_value,
+  reserves_months:L.proposed_housing_payment?L.reserves_liquid/L.proposed_housing_payment:0});
+
+function localEngine(L){
+  const r=RULES[L.loan_program]||RULES.conventional, m=metricsOf(L), F=[];
+  if(m.dti>r.max_dti)F.push({id:"F-DTI",severity:m.dti>r.max_dti+.10?"fatal":"high",citation:r.c.dti,
+    why_it_fails:`DTI ${pct(m.dti)} exceeds the ${(r.max_dti*100).toFixed(0)}% maximum for ${r.name}.`});
+  if(m.ltv>r.max_ltv)F.push({id:"F-LTV",severity:"high",citation:r.c.ltv,
+    why_it_fails:`LTV ${pct(m.ltv)} exceeds the ${(r.max_ltv*100).toFixed(1)}% maximum for ${r.name}.`});
+  if(L.credit_score<r.min_credit)F.push({id:"F-FICO",severity:L.credit_score<r.min_credit-40?"fatal":"high",citation:r.c.fico,
+    why_it_fails:`Credit score ${L.credit_score} is below the ${r.min_credit} minimum for ${r.name}.`});
+  if(m.reserves_months<r.min_res)F.push({id:"F-RES",severity:"medium",citation:r.c.res,
+    why_it_fails:`Reserves ${m.reserves_months.toFixed(1)} mo are below the ${r.min_res}-mo minimum for ${r.name}.`});
+  const conv=L.loan_program==="conventional";
+  const remedy=f=>{
+    if(f.id==="F-DTI")return conv&&m.dti<=FHA.max_dti?{remedy_type:"product_switch",effort:"low",citation:FHA.c.dti,investor:"FHA",action:"Switch to FHA, which allows a higher DTI with compensating factors."}:{remedy_type:"borrower_action",effort:"high",citation:f.citation,action:"Pay down revolving debt to bring DTI under the program maximum."};
+    if(f.id==="F-LTV")return {remedy_type:"borrower_action",effort:"medium",citation:f.citation,action:"Increase the down payment (or use eligible gift funds) to lower LTV under the cap."};
+    if(f.id==="F-FICO")return conv&&L.credit_score>=FHA.min_credit?{remedy_type:"product_switch",effort:"low",citation:FHA.c.fico,investor:"FHA",action:"Switch to FHA, whose minimum decision credit score is lower."}:{remedy_type:"borrower_action",effort:"high",citation:f.citation,action:"Rapid-rescore after paying down utilization / disputing errors."};
+    if(f.id==="F-RES")return conv?{remedy_type:"product_switch",effort:"low",citation:FHA.c.res,investor:"FHA",action:"Switch to FHA, which requires no reserves for 1-2 unit properties."}:{remedy_type:"borrower_action",effort:"low",citation:f.citation,action:"Season additional liquid reserves to meet the minimum."};
+    return {remedy_type:"borrower_action",effort:"medium",citation:f.citation,action:"Provide additional documentation for manual review."};
+  };
+  const steps=[],open=[],ADV={"F-DTI":"Debt-to-income ratio exceeds program maximums.","F-LTV":"Loan-to-value exceeds the maximum for the requested program.","F-FICO":"Credit score does not meet the minimum required.","F-RES":"Insufficient cash reserves after closing."};
+  let rank=1;
+  const rem={}; F.forEach(f=>rem[f.id]=remedy(f));
+  F.forEach(f=>{const R=rem[f.id];
+    if(R&&(R.effort==="low"||R.effort==="medium")){steps.push({rank:rank++,action:R.action,why:f.why_it_fails,effort:R.effort,investor:R.investor||null,citation:R.citation});}
+    else open.push({issue:f.why_it_fails,adverse_action_reason:ADV[f.id]||"Does not meet program eligibility.",citation:f.citation});});
+  const decision_state=!F.length?"fundable_now":(open.length?"not_yet":"fundable_with_steps");
+  const tok=440+F.length*6, cloud_tok=Math.round(tok*.62);
+  return {loan_id:L.loan_id,metrics:m,findings:F,remedies:rem,decision_state,steps,still_open:open,
+    audit:{every_claim_has_citation:F.every(f=>f.citation),unverified_flags:[]},
+    routing_report:{local_calls:3,cloud_calls:2,tokens:tok,est_cost_usd:cloud_tok*9e-7,escalations:2}};
+}
+
+// ---------------- state ----------------
+let draft=null, lastResult=null, prevDecision=null, mode="live", busy=false, soundOn=false;
+const BADGE={fundable_now:["now","FUNDABLE NOW","Clears every guideline as submitted."],
+  fundable_with_steps:["path","PATH TO YES",""], not_yet:["not","NOT YET",""]};
+const FIELDS=[
+  ["monthly_income","Monthly income",2000,20000,100,"$"],
+  ["monthly_debts","Monthly debts",0,6000,50,"$"],
+  ["proposed_housing_payment","Housing payment (PITI)",800,6000,50,"$"],
+  ["loan_amount","Loan amount",50000,900000,1000,"$"],
+  ["property_value","Property value",80000,1200000,1000,"$"],
+  ["credit_score","Credit score",500,820,1,""],
+  ["reserves_liquid","Liquid reserves",0,80000,500,"$"],
+];
+
+// ---------------- personas ----------------
+const FALLBACK_SCENARIOS=[
+  {key:"maria",name:"Maria Delgado",initials:"MD",story:"Self-employed designer, 2 yrs 1099, excellent credit.",expected:"fundable_now",loan:{loan_id:"MARIA-01",loan_program:"conventional",occupancy:"primary",property_value:500000,loan_amount:400000,monthly_income:12000,monthly_debts:1500,proposed_housing_payment:2200,credit_score:760,reserves_liquid:20000}},
+  {key:"james",name:"James Okafor",initials:"JO",story:"W-2 nurse; a new car loan pushed DTI over the line.",expected:"fundable_with_steps",loan:{loan_id:"JAMES-01",loan_program:"conventional",occupancy:"primary",property_value:400000,loan_amount:380000,monthly_income:8000,monthly_debts:1800,proposed_housing_payment:2600,credit_score:700,reserves_liquid:5000}},
+  {key:"nguyen",name:"The Nguyen Family",initials:"NG",story:"First-time buyers, 3% down, thin reserves.",expected:"fundable_with_steps",loan:{loan_id:"NGUYEN-01",loan_program:"conventional",occupancy:"primary",property_value:350000,loan_amount:341000,monthly_income:9000,monthly_debts:900,proposed_housing_payment:2500,credit_score:720,reserves_liquid:2000}},
+  {key:"derek",name:"Derek Cole",initials:"DC",story:"Credit dinged post-divorce; income tight.",expected:"not_yet",loan:{loan_id:"DEREK-01",loan_program:"conventional",occupancy:"primary",property_value:300000,loan_amount:294000,monthly_income:6000,monthly_debts:2200,proposed_housing_payment:2400,credit_score:580,reserves_liquid:0}},
+];
+let SCENARIOS=FALLBACK_SCENARIOS;
+let SF_RECORDS=[];
+let currentSource="salesforce";
+let activeKey="JAMES-01";
+let editable=false;   // underwriter override / what-if on the loaded file
+const DEFAULT_LOAN={loan_id:"MANUAL-01",loan_program:"conventional",occupancy:"primary",property_value:400000,loan_amount:360000,monthly_income:8000,monthly_debts:1200,proposed_housing_payment:2200,credit_score:720,reserves_liquid:12000};
+
+async function loadSources(){
+  try{const r=await fetch("/ingest/salesforce"); if(r.ok){const j=await r.json(); if(j.length)SF_RECORDS=j;}}catch(e){}
+  if(!SF_RECORDS.length){
+    const ids=["0065f00000AqR1xAAG","0065f00000BvT4mAAG","0065f00000CwU7nAAG","0065f00000DxV9pAAG"];
+    SF_RECORDS=FALLBACK_SCENARIOS.map((p,i)=>({opportunity_id:ids[i%4],borrower:p.name,initials:p.initials,stage:"Underwriting",story:p.story,expected:p.expected,loan:p.loan}));
+  }
+  SCENARIOS=SF_RECORDS.map(r=>({key:r.loan.loan_id,name:r.borrower,initials:r.initials,story:r.story,expected:r.expected,loan:r.loan}));
+  renderSF();
+}
+function renderSF(){
+  const box=$("sfrecs"); box.innerHTML="";
+  SF_RECORDS.forEach((r,i)=>{
+    const b=el("button","sfrec");
+    b.innerHTML=`<div class="avatar">${esc(r.initials)}</div>
+      <div style="flex:1"><div class="nm">${esc(r.borrower)} <span class="kbd">${i+1}</span></div>
+      <div class="oid">${esc(r.opportunity_id)} · ${esc(r.stage)}</div></div>
+      <span class="synced" title="Synced from Salesforce">● synced</span>`;
+    b.onclick=()=>{ loadRecord(r.loan,{name:r.borrower,meta:r.opportunity_id+" · Salesforce"}); run(); };
+    box.appendChild(b);
+  });
+}
+function loadRecord(loan,info){
+  draft=Object.assign({},loan);
+  activeKey=loan.loan_id;
+  $("filecard").hidden=false;
+  $("fbName").textContent=info.name||loan.loan_id;
+  $("fmeta").textContent=info.meta||"";
+  editable=(currentSource==="manual");
+  $("ovr").setAttribute("aria-pressed",editable);
+  syncProgram(); buildFields(); previewMetrics();
+}
+function switchSource(s){
+  currentSource=s;
+  [...$("source").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.s===s));
+  ["salesforce","upload","manual"].forEach(k=>$("src-"+k).hidden=(k!==s));
+  if(s==="manual"){ loadRecord(Object.assign({},DEFAULT_LOAN),{name:"Manual entry",meta:"hand-keyed · what-if"}); editable=true; $("ovr").setAttribute("aria-pressed",true); buildFields(); previewMetrics(); }
+}
+function handleFile(file){
+  const rd=new FileReader();
+  rd.onload=()=>{ try{ const loan=JSON.parse(rd.result);
+      loadRecord(loan,{name:loan.loan_id||"Uploaded file",meta:esc(file.name)+" · uploaded"}); run();
+    }catch(e){ toast("Couldn't parse that file — expected loan JSON."); } };
+  rd.readAsText(file);
+}
+function toggleOverride(){ editable=!editable; $("ovr").setAttribute("aria-pressed",editable); syncProgram(); buildFields(); previewMetrics(); if(editable)toast("Override on — simulate a what-if, then Run."); }
+
+// ---------------- file rendering: read-only record, or override sliders ----------------
+function syncProgram(){ [...$("program").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.p===draft.loan_program));
+  $("program").style.opacity=editable?1:.45; $("program").style.pointerEvents=editable?"auto":"none"; }
+function buildFields(){
+  const box=$("fields"); box.innerHTML="";
+  if(!editable){
+    const grid=el("div","roview");
+    FIELDS.forEach(([k,label,,,,prefix])=>grid.appendChild(el("div","rocell",`<span>${label}</span><b>${prefix}${Number(draft[k]).toLocaleString()}</b>`)));
+    box.appendChild(grid); return;
+  }
+  FIELDS.forEach(([k,label,min,max,step,prefix])=>{
+    const f=el("div","field");
+    f.innerHTML=`<label>${label}<b id="lbl_${k}">${prefix}${Number(draft[k]).toLocaleString()}</b></label>
+      <input type="range" min="${min}" max="${max}" step="${step}" value="${draft[k]}" id="rng_${k}" aria-label="${label}">`;
+    box.appendChild(f);
+    f.querySelector("input").addEventListener("input",e=>{ draft[k]=Number(e.target.value); $("lbl_"+k).textContent=prefix+Number(draft[k]).toLocaleString(); previewMetrics(); });
+  });
+}
+function previewMetrics(){
+  if(!draft)return;
+  const m=metricsOf(draft), r=RULES[draft.loan_program];
+  renderMetrics(m,{dtiBad:m.dti>r.max_dti,ltvBad:m.ltv>r.max_ltv,resBad:m.reserves_months<r.min_res,ficoBad:draft.credit_score<r.min_credit});
+  const pred=localEngine(draft).decision_state;
+  $("runBtn").textContent = !editable ? "Convene the tribunal ▸"
+    : pred==="fundable_now" ? "Run · likely FUNDABLE ▸"
+    : pred==="fundable_with_steps" ? "Run · likely PATH TO YES ▸" : "Run · likely NOT YET ▸";
+}
+function renderMetrics(m,flags){
+  const rows=[
+    ["DTI",pct(m.dti),"",flags.dtiBad],
+    ["LTV",pct(m.ltv),"",flags.ltvBad],
+    ["Reserves",m.reserves_months.toFixed(1),"mo",flags.resBad],
+    ["FICO",draft.credit_score,"",flags.ficoBad],
+  ];
+  const box=$("metrics"); box.innerHTML="";
+  rows.forEach(([k,v,u,bad])=>{
+    const d=el("div","mt "+(bad?"bad":"ok"));
+    d.innerHTML=`<span>${k}</span><b>${v}<small>${u}</small></b>`;
+    box.appendChild(d);
+  });
+}
+
+// ---------------- the run: streaming proceeding ----------------
+const chargeEls={}, defenseEls={};
+function resetChamber(){
+  $("prosRows").innerHTML=""; $("defRows").innerHTML=""; $("vbody").innerHTML="";
+  $("tendrils").innerHTML=""; $("verdict").classList.remove("show");
+  for(const k in chargeEls)delete chargeEls[k]; for(const k in defenseEls)delete defenseEls[k];
+  $("prosRows").appendChild(el("div","thinking",'<span class="dot"></span>Scanning the file against guidelines…'));
+}
+function citeHTML(c){ return c?`<span class="cite" title="${esc(c.quote||"")}">${esc(c.source)}</span>`:""; }
+
+function onCharge(p){
+  const t=$("prosRows").querySelector(".thinking"); if(t)t.remove();
+  const f=p.finding;
+  const card=el("div","item charge");
+  card.dataset.fid=f.id;
+  card.innerHTML=`<div class="t">${esc(f.why_it_fails)}</div>
+    <div class="meta">
+      <span class="sev ${f.severity}"><span class="dot"></span>${f.severity}</span>
+      <span class="lane local">MI300X</span>
+      ${citeHTML(f.citation)}
+    </div>`;
+  $("prosRows").appendChild(card); chargeEls[f.id]=card;
+}
+function onDefense(p){
+  const R=p.remedy, fid=p.finding_id;
+  const dead=!R||R.effort==="high";
+  const card=el("div","item defense"+(dead?" dead":""));
+  card.dataset.fid=fid;
+  card.innerHTML=`<div class="t">${R?esc(R.action):"No low-effort path — refer to manual underwriting."}</div>
+    <div class="meta">
+      ${R?`<span class="pill ${R.effort}">${R.effort} effort</span>`:""}
+      ${R&&R.investor?`<span class="pill">${esc(R.investor)}</span>`:""}
+      <span class="lane cloud">Fireworks</span>
+      ${R?citeHTML(R.citation):""}
+    </div>`;
+  $("defRows").appendChild(card); defenseEls[fid]=card;
+  drawTendrils();
+}
+function drawTendrils(){
+  const svg=$("tendrils"), chamber=svg.parentElement, cr=chamber.getBoundingClientRect();
+  svg.setAttribute("viewBox",`0 0 ${cr.width} ${cr.height}`); svg.innerHTML="";
+  Object.keys(defenseEls).forEach(fid=>{
+    const a=chargeEls[fid], b=defenseEls[fid]; if(!a||!b)return;
+    const ar=a.getBoundingClientRect(), br=b.getBoundingClientRect();
+    const x1=ar.right-cr.left, y1=ar.top-cr.top+ar.height/2;
+    const x2=br.left-cr.left, y2=br.top-cr.top+br.height/2;
+    const mx=(x1+x2)/2;
+    const dead=b.classList.contains("dead");
+    const path=document.createElementNS("http://www.w3.org/2000/svg","path");
+    path.setAttribute("d",`M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`);
+    path.setAttribute("fill","none");
+    path.setAttribute("stroke",dead?"var(--pros)":"var(--def)");
+    path.setAttribute("stroke-width","1.4");
+    path.setAttribute("stroke-dasharray","4 4");
+    path.setAttribute("opacity",".45");
+    svg.appendChild(path);
+  });
+}
+window.addEventListener("resize",()=>drawTendrils());
+
+function onVerdict(v){
+  const [cls,label,fixedSum]=BADGE[v.decision_state];
+  const sc=$("scoreChip");
+  if(typeof v.approval_score==="number"){ sc.hidden=false; sc.textContent=`learned approval score ${(v.approval_score*100).toFixed(0)}%`; }
+  else sc.hidden=true;
+  const st=$("stamp"); st.className="stamp "+cls; st.textContent=label;
+  st.classList.remove("hit"); void st.offsetWidth; st.classList.add("hit");
+  const nS=v.steps.length,nO=v.still_open.length;
+  $("sum").textContent=fixedSum||(`${nS} step${nS!==1?"s":""} to yes`+(nO?` · ${nO} still blocking`:"")+".");
+  const vb=$("vbody"); vb.innerHTML="";
+  v.steps.forEach(s=>{
+    vb.appendChild(el("div","step",`<div class="rank">${s.rank}</div>
+      <div style="flex:1"><div class="a">${esc(s.action)}</div><div class="w">${esc(s.why)}</div>
+      <div class="m"><span class="pill ${s.effort}">${s.effort} effort</span>
+      ${s.investor?`<span class="pill">${esc(s.investor)}</span>`:""}${citeHTML(s.citation)}</div></div>`));
+  });
+  v.still_open.forEach(o=>{
+    vb.appendChild(el("div","open",`<div class="lbl">Still blocking · adverse-action reason (Reg-B)</div>
+      <div class="r">${esc(o.adverse_action_reason)} ${citeHTML(o.citation)}</div>`));
+  });
+  if(!v.steps.length&&!v.still_open.length)
+    vb.appendChild(el("div","clean",`<div class="ring">✓</div>This file clears every threshold as submitted.`));
+  $("verdict").classList.add("show");
+  if(soundOn)gavel(v.decision_state);
+}
+function onRouting(r,wallMs){
+  const total=r.local_calls+r.cloud_calls, share=total?r.local_calls/total:0;
+  const cloudTok=Math.round(r.est_cost_usd/9e-7), localTok=Math.max(r.tokens-cloudTok,0);
+  const allCloud=r.tokens*9e-7, save=allCloud>0?1-r.est_cost_usd/allCloud:0;
+  $("savePct").innerHTML=`${(save*100).toFixed(0)}%<small>cheaper than all-frontier</small>`;
+  $("cmp").innerHTML=`
+    <div class="row"><div class="l"><span class="k">All-frontier baseline</span><span class="v">${money(allCloud)}</span></div>
+      <div class="track"><div class="fill cloud" style="width:100%"></div></div></div>
+    <div class="row"><div class="l"><span class="k">Crucible hybrid (MI300X)</span><span class="v">${money(r.est_cost_usd)}</span></div>
+      <div class="track"><div class="fill hybrid" style="width:${(r.est_cost_usd/allCloud*100).toFixed(0)}%"></div></div></div>`;
+  const perMonth=(allCloud-r.est_cost_usd)*10000;
+  $("proj").innerHTML=`<b>${(share*100).toFixed(0)}%</b> of calls handled on-device · ${localTok} local / ${cloudTok} cloud tokens<br>
+    ≈ <b>$${perMonth.toFixed(2)}/mo</b> saved at 10k loans/mo <span style="color:var(--faint)">(this token profile)</span>`;
+  // routing trace
+  const steps=[["retrieve guidelines","local",.94],["compute metrics","local",1],["adversary scan","local",.9],["advocate synthesis","cloud",.62],["adjudicate","cloud",.58]];
+  $("trace").innerHTML=steps.map(([s,lane,conf])=>`<div class="trrow">
+    <span class="lane ${lane}">${lane==="local"?"MI300X":"Fireworks"}</span>
+    <span class="s">${s}</span>${lane==="cloud"?'<span class="esc">↑ escalated</span>':`<span style="color:var(--faint)">${(conf*100)|0}%</span>`}</div>`).join("");
+  $("ledger").innerHTML=`<b>run</b> ${lastResult?esc(lastResult.loan_id):"—"} · <b>mode</b> ${mode} · <b>streamed</b> ${(wallMs/1000).toFixed(1)}s<br>
+    <b>tokens</b> ${r.tokens} · <b>escalations</b> ${r.escalations} · <b>cited</b> ${lastResult&&lastResult.audit.every_claim_has_citation?"100%":"partial"}`;
+}
+function showShare(res){
+  const [,label]=BADGE[res.decision_state];
+  const p=SCENARIOS.find(s=>s.key===activeKey);
+  $("share").style.display="block";
+  $("shareB").textContent=`${p?p.name:res.loan_id}: ${label}`;
+  $("shareM").textContent=res.decision_state==="not_yet"
+    ? `${res.still_open.length} blocker · ${res.steps.length} steps identified · every reason cited`
+    : `${res.steps.length} cited step${res.steps.length!==1?"s":""} to funding · adjudicated on the record`;
+}
+
+// ---------------- workfile: conditions, documents, outreach, AUS, learning ----------------
+const SECTION_ORDER=["Master","TRAC","Underwriter II (PTD)","Disclosures/Compliance (PTD)","Underwriter To Obtain And Clear"];
+let currentLoanId=null;
+
+function renderConditions(conds,flashCodes){
+  const board=$("condBoard"); board.innerHTML="";
+  const bySec={};
+  conds.forEach(c=>{(bySec[c.section]=bySec[c.section]||[]).push(c);});
+  SECTION_ORDER.concat(Object.keys(bySec).filter(s=>!SECTION_ORDER.includes(s))).forEach(sec=>{
+    const list=bySec[sec]; if(!list)return;
+    const done=list.filter(c=>c.cleared).length;
+    board.appendChild(el("div","csec-h",`${esc(sec)} <span>${done}/${list.length} cleared</span>`));
+    list.forEach(c=>{
+      const row=el("div","crow"+(flashCodes&&c.cleared&&flashCodes.has(c.code)?" flash":""));
+      row.dataset.code=c.code;
+      const d=c.description.length>130?c.description.slice(0,127)+"…":c.description;
+      row.innerHTML=`<span class="code">${esc(c.code)}</span><span class="cat">${esc(c.category)}</span>
+        <span class="d" title="${esc(c.description)}">${esc(d)}</span>
+        <span class="cst ${c.cleared?"clear":"open"}">${c.cleared?"Cleared":"Not Cleared"}</span>`;
+      board.appendChild(row);
+    });
+  });
+  const open=conds.filter(c=>!c.cleared).length;
+  $("wfCount").innerHTML=`<b>${conds.length-open}</b> cleared · ${open} open`;
+}
+
+function renderWorkfile(result){
+  currentLoanId=result.loan_id;
+  const conds=result.conditions||[];
+  $("workfile").classList.toggle("show",conds.length>0);
+  if(conds.length)renderConditions(conds,null);
+  const live=(mode==="live");
+  ["docFile","outreachBtn","ausBtn"].forEach(id=>$(id).disabled=!live);
+  $("samples").querySelectorAll("button").forEach(b=>b.disabled=!live);
+  $("wfMode").textContent=live?"agentic actions live":"offline demo — run scripts/serve.py for docs · outreach · AUS";
+  $("docLog").innerHTML=""; $("outreachList").innerHTML=""; $("ausBox").hidden=true;
+
+  const r=result.restructure, box=$("restruct");
+  if(r&&r.needed){
+    box.hidden=false;
+    box.innerHTML=`<div class="lbl2">Autonomous restructure — the agent rebuilt the file</div>`+
+      ((r.moves&&r.moves.length)
+        ? r.moves.map(mv=>`<div class="rmove">${esc(mv.action)} <span class="ft">${esc(mv.field)}: ${esc(mv.from_value)} → ${esc(mv.to_value)}</span>${mv.coc?'<span class="coc">COC 0571</span>':""}</div>`).join("")+
+          `<div class="rmove ft" style="color:var(--def)">→ ${esc(r.note||"")}</div>`
+        : `<div class="rmove ft">${esc(r.note||"No realistic restructure found; manual structuring required.")}</div>`);
+  }else box.hidden=true;
+}
+
+async function refreshWorkfileBoard(flashCodes){
+  try{
+    const wf=await(await fetch(`/workfile/${encodeURIComponent(currentLoanId)}`)).json();
+    renderConditions(wf.result.conditions,flashCodes);
+  }catch(e){}
+}
+
+const SAMPLE_DOCS={
+  bank:{filename:"bank_statement_jun.pdf",text:"Bank Statement — Account Summary. Beginning balance $31,000. Ending balance: $41,250.00"},
+  hoi:{filename:"hoi_declarations.pdf",text:"Homeowners Insurance Declarations. Policy period 12 months. Dwelling coverage: $405,000.00"},
+  lox:{filename:"borrower_lox.pdf",text:"Letter of Explanation. To whom it may concern: the credit inquiry from UNITED WHOLE was for this mortgage application; no new credit was obtained."},
+  title:{filename:"title_report.pdf",text:"Title Commitment — Schedule B. Lien search complete. No open judgments of record. Clear title."},
+};
+
+async function sendDocument(doc){
+  if(!currentLoanId||mode!=="live"){toast("Backend offline — doc analysis needs the live server.");return;}
+  try{
+    const r=await fetch(`/workfile/${encodeURIComponent(currentLoanId)}/documents`,{method:"POST",
+      headers:{"Content-Type":"application/json"},body:JSON.stringify(doc)});
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    const rep=await r.json(), log=$("docLog");
+    rep.cleared.forEach(c=>log.prepend(el("div","li",`<b>${esc(rep.doc_type)}</b> → cleared <b>${esc(c.code)}</b>: ${esc(c.why)}`)));
+    rep.insufficient.forEach(c=>log.prepend(el("div","li warn",`<b>${esc(rep.doc_type)}</b> → did <b>not</b> clear ${esc(c.code)}: ${esc(c.why)}`)));
+    if(!rep.cleared.length&&!rep.insufficient.length)
+      log.prepend(el("div","li warn",`<b>${esc(rep.doc_type)}</b> → no matching open conditions`));
+    await refreshWorkfileBoard(new Set(rep.cleared.map(c=>c.code)));
+    refreshLearning();
+    if(soundOn&&rep.cleared.length)gavel("fundable_now");
+  }catch(e){toast("Document analysis failed: "+e.message);}
+}
+
+function readDocFile(f){
+  const rd=new FileReader();
+  rd.onload=()=>{
+    let doc={filename:f.name,text:String(rd.result)};
+    try{const j=JSON.parse(rd.result); doc=(j.text||j.fields)?{filename:f.name,...j}:{filename:f.name,fields:j};}catch(e){}
+    sendDocument(doc);
+  };
+  rd.readAsText(f);
+}
+
+async function runOutreach(){
+  if(!currentLoanId||mode!=="live"){toast("Backend offline — outreach needs the live server.");return;}
+  $("outreachBtn").disabled=true;
+  try{
+    const r=await(await fetch(`/workfile/${encodeURIComponent(currentLoanId)}/outreach`,{method:"POST"})).json();
+    const box=$("outreachList"); box.innerHTML="";
+    const icon={call:"☎",sms:"✉",email:"@"};
+    r.items.forEach(i=>box.appendChild(el("div","oitem",
+      `<span class="oc">${esc(i.condition_code)}</span><span class="ch">${icon[i.channel]||"→"} ${esc(i.channel)}</span>
+       <span class="role">${esc(i.contact_role.replace(/_/g," "))}</span><span class="st">${esc(i.status)}</span>`)));
+    toast(`${r.items.length} outreach item${r.items.length!==1?"s":""} ${r.live?"dispatched":"queued (demo)"} — one per open condition.`);
+  }catch(e){toast("Outreach failed: "+e.message);}
+  $("outreachBtn").disabled=false;
+}
+
+async function runAus(){
+  if(!currentLoanId||mode!=="live"){toast("Backend offline — AUS needs the live server.");return;}
+  $("ausBtn").disabled=true;
+  try{
+    const a=await(await fetch(`/workfile/${encodeURIComponent(currentLoanId)}/aus`,{method:"POST"})).json();
+    const good=(a.recommendation||"").startsWith("Approve");
+    $("ausBox").hidden=false;
+    $("ausBox").innerHTML=`<span class="ausbadge ${good?"ok":"no"}">${esc(a.recommendation||a.error||"—")}</span>
+      <span class="simtag">${a.engine==="du_api"?"Fannie Mae DU API":"Crucible engine · DU-shaped · simulated"}</span>`;
+  }catch(e){toast("AUS failed: "+e.message);}
+  $("ausBtn").disabled=false;
+}
+
+async function refreshLearning(){
+  try{
+    const l=await(await fetch("/learning")).json();
+    const clr=Object.entries(l.condition_clearances||{}).slice(0,3)
+      .map(([code,s])=>`${code}: ${s.count}× (${Object.keys(s.by_doc).join(", ")})`).join("<br>");
+    const moves=Object.entries(l.restructure_moves||{}).slice(0,2)
+      .map(([a,s])=>`${esc(a.split(" ").slice(0,4).join(" "))}… <b>${s.successes}/${s.attempts}</b>`).join("<br>");
+    $("learnBox").innerHTML=`<b>${l.files_underwritten}</b> files underwritten<br>`+
+      (clr?`<b>clearances learned</b><br>${clr}<br>`:"")+(moves?`<b>restructure moves</b><br>${moves}`:"");
+  }catch(e){}
+}
+
+function offlineConditions(L){
+  const purchase=(L.loan_purpose||"purchase")==="purchase", conds=[];
+  const add=(code,section,category,description)=>conds.push({code,section,category,description,status:"Not Cleared",cleared:false});
+  add("0973","Master","Property","Property: Appraisal Waiver accepted. No appraisal currently needed as long as the Appraisal Waiver remains approved.");
+  if(L.has_temp_buydown)add("3308","Master","TC","TC: Temporary Buydown Agreement to be executed by all parties and returned in the closing package.");
+  add("0031","TRAC","Title","Title (TRAC/TRAC+): TRAC Curative Team to obtain clear title.");
+  if((L.open_judgment_amount||0)>0){
+    add("0064","TRAC","Title","Title (TRAC+): Broker to verify judgment payoff or subordination.");
+    add("0064","TRAC","Title","Title (TRAC+): TRAC Curative Team to obtain payoff for the judgment lien on title.");
+  }
+  if(L.loan_program==="conventional")add("7015","TRAC","Property","Property (Conv): TRAC Team to provide UWM-approved title summary with chain of title and tax verification.");
+  const total=Math.max(L.property_value-L.loan_amount,0)+0.03*L.loan_amount;
+  if(L.reserves_liquid<total)add("7086","Underwriter II (PTD)","Assets",
+    `Assets: Short funds to close. Total funds required are $${total.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}. $${L.reserves_liquid.toLocaleString()} currently verified.`);
+  add("5767","Underwriter II (PTD)","Credit","Credit: Letter of explanation from borrower(s) for credit inquiries.");
+  if(purchase)add("6170","Underwriter II (PTD)","HOI","HOI: Provide an updated homeowners insurance declarations page with sufficient dwelling coverage.");
+  else{
+    add("6977","Underwriter II (PTD)","HOI","HOI Refi Renewal: Provide an updated renewal homeowners insurance declarations page.");
+    add("6283","Underwriter II (PTD)","Borrower","Borrower: Provide a signed LOX describing the tangible benefit of the loan.");
+  }
+  add("0282","Disclosures/Compliance (PTD)","Disclosure","Disclosure: Fully executed initial 1003 signed by all borrower(s) and the loan originator.");
+  add("0408","Disclosures/Compliance (PTD)","Disclosure","Disclosure: Homeownership Counseling Disclosure (10 agencies, dated within 3 days of the 1003).");
+  add("0426","Disclosures/Compliance (PTD)","Disclosure","Disclosure: H-3 model credit score disclosure.");
+  add("0465","Disclosures/Compliance (PTD)","Disclosure","Disclosure: Settlement Service Provider List matching Block C of the LE.");
+  if((L.state||"TN").toUpperCase()==="TN")add("0443","Disclosures/Compliance (PTD)","Disclosure","Disclosure: TN — MLO and company license numbers disclosed on the 1003.");
+  return conds;
+}
+
+async function parseStream(res,onEvent){
+  const reader=res.body.getReader(), dec=new TextDecoder(); let buf="";
+  while(true){
+    const {value,done}=await reader.read(); if(done)break;
+    buf+=dec.decode(value,{stream:true}); let i;
+    while((i=buf.indexOf("\n\n"))>=0){
+      const frame=buf.slice(0,i); buf=buf.slice(i+2);
+      let ev="message",data="";
+      frame.split("\n").forEach(l=>{ if(l.startsWith("event:"))ev=l.slice(6).trim(); else if(l.startsWith("data:"))data+=l.slice(5).trim(); });
+      if(ev==="end")return;
+      let pl={}; try{pl=JSON.parse(data);}catch(e){}
+      await onEvent(ev,pl);
+    }
+  }
+}
+
+async function run(){
+  if(busy)return; busy=true; $("runBtn").disabled=true;
+  resetChamber();
+  const loan=Object.assign({},draft);
+  const t0=performance.now();
+  let done=null;
+  const handle=async(ev,pl)=>{
+    if(ev==="opening"){ renderMetrics(pl.metrics,livePreviewFlags(pl.metrics)); }
+    else if(ev==="charge"){ onCharge(pl); await sleep(120); }
+    else if(ev==="defense"){ onDefense(pl); await sleep(90); }
+    else if(ev==="verdict"){ await sleep(260); onVerdict(pl); }
+    else if(ev==="routing"){ done=done||{}; done.routing=pl; }
+    else if(ev==="done"){ done=pl; }
+  };
+  try{
+    const res=await fetch("/underwrite/stream",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({loan})});
+    if(!res.ok||!res.body)throw new Error("nostream");
+    setMode("live");
+    await parseStream(res,handle);
+  }catch(e){
+    setMode("demo");
+    done=await driveOffline(loan,handle);
+  }
+  const result=done&&done.loan_id?done:localEngine(loan);
+  lastResult=result;
+  onRouting(result.routing_report,performance.now()-t0);
+  showShare(result);
+  showDiff(result);
+  renderWorkfile(result);
+  refreshLearning();
+  prevDecision={state:result.decision_state,name:(SCENARIOS.find(s=>s.key===activeKey)||{}).name||loan.loan_id};
+  busy=false; $("runBtn").disabled=false; previewMetrics();
+}
+function livePreviewFlags(m){const r=RULES[draft.loan_program];return {dtiBad:m.dti>r.max_dti,ltvBad:m.ltv>r.max_ltv,resBad:m.reserves_months<r.min_res,ficoBad:draft.credit_score<r.min_credit};}
+
+async function driveOffline(loan,handle){
+  const R=localEngine(loan);
+  R.conditions=offlineConditions(loan);
+  R.restructure={needed:R.decision_state==="not_yet",moves:[],resulting_state:R.decision_state,
+                 note:"Restructure solver runs on the backend — start scripts/serve.py to see the rebuilt file."};
+  await handle("opening",{metrics:R.metrics});
+  for(const f of R.findings){ await handle("charge",{finding:f}); await sleep(360); }
+  for(const f of R.findings){ await handle("defense",{finding_id:f.id,remedy:R.remedies[f.id]}); await sleep(300); }
+  await handle("verdict",{decision_state:R.decision_state,steps:R.steps,still_open:R.still_open,audit:R.audit});
+  return R;
+}
+
+function showDiff(res){
+  if(!prevDecision){ $("diff").classList.remove("show"); return; }
+  if(prevDecision.state===res.decision_state){ $("diff").classList.remove("show"); return; }
+  const [,to]=BADGE[res.decision_state]; const [,from]=BADGE[prevDecision.state];
+  $("diff").innerHTML=`<b>Changed:</b> ${from} → <b>${to}</b> after your edits.`;
+  $("diff").classList.add("show");
+}
+function setMode(m){ mode=m; const s=$("status"); s.className="status "+m;
+  $("statusText").textContent = m==="live" ? "live · streaming /underwrite" : "demo · on-device engine"; }
+
+// ---------------- export (compliance artifacts) ----------------
+function download(name,text){ const b=new Blob([text],{type:"text/plain"});
+  const a=el("a"); a.href=URL.createObjectURL(b); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
+function exportArtifacts(){
+  if(!lastResult){ toast("Run the tribunal first."); return; }
+  const r=lastResult, p=SCENARIOS.find(s=>s.key===activeKey), who=p?p.name:r.loan_id;
+  const [,label]=BADGE[r.decision_state];
+  let letter=`CRUCIBLE — PATH TO YES\nBorrower: ${who}   File: ${r.loan_id}\nDetermination: ${label}\n\nMetrics: DTI ${pct(r.metrics.dti)} · LTV ${pct(r.metrics.ltv)} · reserves ${r.metrics.reserves_months.toFixed(1)} mo\n\n`;
+  if(r.steps.length){ letter+="Your path to approval:\n"; r.steps.forEach(s=>{letter+=`  ${s.rank}. ${s.action}\n     Why: ${s.why}\n     Basis: ${s.citation?s.citation.source:"—"}\n`;}); }
+  else letter+="This file clears every guideline as submitted.\n";
+  let adverse="";
+  if(r.still_open.length){ adverse=`STATEMENT OF ADVERSE ACTION (Reg B / ECOA)\nBorrower: ${who}   File: ${r.loan_id}\n\nPrincipal reason(s) credit was not extended as requested:\n`;
+    r.still_open.forEach((o,i)=>{adverse+=`  ${i+1}. ${o.adverse_action_reason}\n     Guideline basis: ${o.citation?o.citation.source:"—"}\n`;}); }
+  download(`crucible_path_to_yes_${r.loan_id}.txt`,letter);
+  if(adverse)download(`crucible_adverse_action_${r.loan_id}.txt`,adverse);
+  download(`crucible_${r.loan_id}.json`,JSON.stringify(r,null,2));
+  toast(adverse?"Exported: letter + adverse-action notice + JSON":"Exported: path-to-yes letter + JSON");
+}
+
+// ---------------- demo mode ----------------
+async function demo(){
+  if(busy)return;
+  switchSource("salesforce");
+  for(const r of SF_RECORDS){ loadRecord(r.loan,{name:r.borrower,meta:r.opportunity_id+" · Salesforce"}); await sleep(500); await run(); await sleep(1400); }
+  toast("Demo complete — four borrowers, four verdicts.");
+}
+
+// ---------------- sound (synth gavel, no assets) ----------------
+let AC=null;
+function gavel(state){
+  try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    const now=AC.currentTime;
+    const hit=(t,f)=>{const o=AC.createOscillator(),g=AC.createGain();o.type="triangle";o.frequency.value=f;
+      g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.25,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+.18);
+      o.connect(g).connect(AC.destination);o.start(t);o.stop(t+.2);};
+    hit(now,180); hit(now+.11,150);
+    if(state==="not_yet")hit(now+.24,120);
+  }catch(e){}
+}
+
+// ---------------- toast / help ----------------
+let toastT=null;
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2600); }
+$("helpBtn").onclick=()=>$("help").classList.add("show");
+$("help").onclick=e=>{ if(e.target===$("help"))$("help").classList.remove("show"); };
+$("exportBtn").onclick=exportArtifacts;
+$("demoBtn").onclick=demo;
+$("runBtn").onclick=run;
+$("soundBtn").onclick=()=>{ soundOn=!soundOn; $("soundBtn").style.color=soundOn?"var(--bench-2)":""; toast(soundOn?"Sound on":"Sound off"); };
+[...$("program").children].forEach(b=>b.onclick=()=>{ if(!editable)return; draft.loan_program=b.dataset.p; syncProgram(); previewMetrics(); });
+[...$("source").children].forEach(b=>b.onclick=()=>switchSource(b.dataset.s));
+$("ovr").onclick=toggleOverride;
+$("file").addEventListener("change",e=>{ if(e.target.files[0])handleFile(e.target.files[0]); });
+(function(){ const d=$("drop");
+  ["dragover","dragenter"].forEach(ev=>d.addEventListener(ev,e=>{e.preventDefault();d.classList.add("over");}));
+  ["dragleave"].forEach(ev=>d.addEventListener(ev,e=>{e.preventDefault();d.classList.remove("over");}));
+  d.addEventListener("drop",e=>{ e.preventDefault(); d.classList.remove("over"); const f=e.dataTransfer.files[0]; if(f)handleFile(f); });
+})();
+$("sampleLink").onclick=e=>{ e.preventDefault(); download("sample_loan_1003.json",JSON.stringify(DEFAULT_LOAN,null,2)); toast("Sample loan file downloaded — drop it back in."); };
+$("outreachBtn").onclick=runOutreach;
+$("ausBtn").onclick=runAus;
+$("samples").addEventListener("click",e=>{ const b=e.target.closest("button"); if(b&&!b.disabled)sendDocument(SAMPLE_DOCS[b.dataset.s]); });
+$("docFile").addEventListener("change",e=>{ const f=e.target.files[0]; if(f)readDocFile(f); e.target.value=""; });
+(function(){ const d=$("docDrop");
+  ["dragover","dragenter"].forEach(ev=>d.addEventListener(ev,e=>{e.preventDefault();d.classList.add("over");}));
+  d.addEventListener("dragleave",e=>{e.preventDefault();d.classList.remove("over");});
+  d.addEventListener("drop",e=>{ e.preventDefault(); d.classList.remove("over"); const f=e.dataTransfer.files[0]; if(f)readDocFile(f); });
+})();
+
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT")return;
+  const k=e.key.toLowerCase();
+  if(k>="1"&&k<="4"){ const r=SF_RECORDS[+k-1]; if(r){ switchSource("salesforce"); loadRecord(r.loan,{name:r.borrower,meta:r.opportunity_id+" · Salesforce"}); run(); } }
+  else if(k==="r")run();
+  else if(k==="d")demo();
+  else if(k==="e")exportArtifacts();
+  else if(k==="o")runOutreach();
+  else if(k==="a")runAus();
+  else if(k==="s")$("soundBtn").click();
+  else if(k==="escape")$("help").classList.remove("show");
+  else if(k==="?")$("help").classList.add("show");
+});
+
+// ---------------- ambient embers ----------------
+(function ambient(){
+  if(REDUCED)return;
+  const cv=$("ambient"),cx=cv.getContext("2d"); let W,H,P=[];
+  const rs=()=>{W=cv.width=innerWidth;H=cv.height=innerHeight;};
+  rs(); addEventListener("resize",rs);
+  for(let i=0;i<46;i++)P.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.6+.4,v:Math.random()*.32+.06,o:Math.random()*.5+.15});
+  (function tick(){ cx.clearRect(0,0,W,H);
+    P.forEach(p=>{ p.y-=p.v; if(p.y<-4){p.y=H+4;p.x=Math.random()*W;}
+      cx.beginPath(); cx.arc(p.x,p.y,p.r,0,7); cx.fillStyle=`rgba(216,162,74,${p.o*.5})`; cx.fill(); });
+    requestAnimationFrame(tick); })();
+})();
+
+// ---------------- boot ----------------
+(async function(){
+  await loadSources();
+  const james=SF_RECORDS.find(r=>/JAMES/i.test(r.loan.loan_id))||SF_RECORDS[1]||SF_RECORDS[0];
+  loadRecord(james.loan,{name:james.borrower,meta:james.opportunity_id+" · Salesforce"});
+  setMode("live");
+  refreshLearning();
+  setTimeout(run,450);
+})();
+</script>
+</body>
+</html>

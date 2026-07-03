@@ -1,0 +1,12 @@
+{
+  "loan_id": "CR-2002",
+  "loan_program": "conventional",
+  "occupancy": "primary",
+  "property_value": 400000,
+  "loan_amount": 380000,
+  "monthly_income": 8000,
+  "monthly_debts": 1800,
+  "proposed_housing_payment": 2600,
+  "credit_score": 700,
+  "reserves_liquid": 5000
+}

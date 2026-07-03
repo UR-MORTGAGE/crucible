@@ -1,0 +1,12 @@
+{
+  "loan_id": "CR-3003",
+  "loan_program": "conventional",
+  "occupancy": "primary",
+  "property_value": 300000,
+  "loan_amount": 294000,
+  "monthly_income": 6000,
+  "monthly_debts": 2200,
+  "proposed_housing_payment": 2400,
+  "credit_score": 580,
+  "reserves_liquid": 0
+}

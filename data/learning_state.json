@@ -1,0 +1,34 @@
+{
+  "weights": {
+    "dti": 1.4534473379999997,
+    "ltv": 0.9570551519999999,
+    "fico": 1.2752650000000008,
+    "res": 0.5957644875000003
+  },
+  "bias": 0.26628000000000007,
+  "n": 52,
+  "move_stats": {
+    "Reduce loan amount (cash-in) to clear DTI": [
+      4,
+      4
+    ],
+    "Add a 2-1 temporary buydown (lowers qualifying payment)": [
+      2,
+      2
+    ]
+  },
+  "clearance_stats": {
+    "7086": {
+      "count": 1,
+      "by_doc": {
+        "bank_statement": 1
+      }
+    },
+    "6170": {
+      "count": 1,
+      "by_doc": {
+        "hoi_policy": 1
+      }
+    }
+  }
+}

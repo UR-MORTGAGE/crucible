@@ -1,0 +1,12 @@
+{
+  "loan_id": "ALICIA-01",
+  "loan_program": "conventional",
+  "occupancy": "primary",
+  "property_value": 500000,
+  "loan_amount": 400000,
+  "monthly_income": 8000,
+  "monthly_debts": 1000,
+  "proposed_housing_payment": 3640,
+  "credit_score": 720,
+  "reserves_liquid": 12000
+}

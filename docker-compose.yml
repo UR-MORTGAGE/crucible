@@ -1,0 +1,32 @@
+# Brings up the local lane (vLLM on ROCm / MI300X) + the Crucible API together.
+# On AMD Developer Cloud, the MI300X is exposed via /dev/kfd and /dev/dri.
+services:
+  vllm:
+    image: rocm/vllm:latest          # ROCm-built vLLM; pin a real tag on Day 1
+    command: >
+      --model ${LOCAL_LLM_MODEL:-meta-llama/Llama-3.1-8B-Instruct}
+      --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+    ipc: host
+    security_opt:
+      - seccomp:unconfined
+
+  crucible:
+    build: .
+    depends_on:
+      - vllm
+    environment:
+      CRUCIBLE_MODE: live
+      LOCAL_LLM_BASE_URL: http://vllm:8000/v1
+      LOCAL_LLM_MODEL: ${LOCAL_LLM_MODEL:-meta-llama/Llama-3.1-8B-Instruct}
+      FIREWORKS_API_KEY: ${FIREWORKS_API_KEY}
+      FIREWORKS_BASE_URL: ${FIREWORKS_BASE_URL:-https://api.fireworks.ai/inference/v1}
+      FIREWORKS_MODEL: ${FIREWORKS_MODEL}
+    ports:
+      - "8080:8080"
