@@ -58,13 +58,15 @@ FastAPI · Python · Salesforce · Twilio · Docker
 | Field | Value | Status |
 |---|---|---|
 | Public GitHub repo | https://github.com/UR-MORTGAGE/crucible *(flip to **public** before submitting: `gh repo edit UR-MORTGAGE/crucible --visibility public`)* | ✅ pushed (private until submit day) |
-| Demo URL | `http://<AMD-instance-ip>:8080` (from `deploy/amd_deploy.sh`) or tunnel | ⏳ needs MI300X deploy |
+| Demo URL (interim, live NOW) | https://wishlist-progressive-mobility-bell.trycloudflare.com *(tunnel → local box; only up while serve.py + cloudflared run)* | ✅ live |
+| Demo URL (final) | `http://<AMD-instance-ip>:8080` from `deploy/amd_deploy.sh` — swap in after MI300X deploy | ⏳ |
 | Video | YouTube (unlisted) — record the console tour (press **T**), ~2.5 min | ⏳ record after live deploy |
 | Slide deck | Export/print the deck artifact to PDF + attach; live link optional | ⏳ export |
 
 ## Cover image
-Screenshot the console mid-verdict: tribunal columns populated, PATH TO YES
-stamp visible, Crucible avatar on screen. 16:9, ≥1280px wide.
+Screenshot the dedicated cover stage (1920×1080, 3D tribunal cards + crucible +
+ember field): https://claude.ai/code/artifact/4b813cdf-ac48-4771-b029-0a77c4b329f8
+— press ⛶ Fullscreen, then PrtScn (or Win+Shift+S the frame).
 
 ## Video script
 Press **T** in the console with the backend live — Crucible narrates and
