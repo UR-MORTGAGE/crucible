@@ -270,6 +270,32 @@
   .rmove .coc{font-family:var(--mono); font-size:.56rem; color:var(--bench-2); border:1px solid var(--line-2); border-radius:4px; padding:1px 5px; margin-left:6px}
   @media(max-width:720px){.wf-grid{grid-template-columns:1fr}}
 
+  /* ---------- Crucible, the in-console guide ---------- */
+  .crux-wrap{position:fixed; right:24px; bottom:24px; z-index:80; display:none; flex-direction:column; align-items:flex-end; gap:10px}
+  .crux-wrap.on{display:flex}
+  .crux-bubble{max-width:300px; background:var(--panel-2); border:1px solid var(--bench); border-radius:14px 14px 4px 14px;
+    padding:12px 14px; box-shadow:0 14px 40px rgba(0,0,0,.55)}
+  .crux-tag{font-family:var(--mono); font-size:.56rem; letter-spacing:.18em; text-transform:uppercase; color:var(--bench); margin-bottom:5px}
+  .crux-bubble p{margin:0; font-size:.85rem; line-height:1.45; color:var(--paper); min-height:3.9em}
+  .crux{width:82px; height:82px; animation:cruxbob 3.2s ease-in-out infinite;
+    filter:drop-shadow(0 8px 22px rgba(216,162,74,.35)); cursor:pointer}
+  @keyframes cruxbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  .crux .eye{transform-box:fill-box; transform-origin:center 62%; animation:cruxblink 4.6s infinite}
+  @keyframes cruxblink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
+  .crux .ember{transform-box:fill-box; animation:emberrise 2.6s ease-in infinite}
+  .crux .e2{animation-delay:.9s}.crux .e3{animation-delay:1.7s}
+  @keyframes emberrise{0%{opacity:0; transform:translateY(6px)}25%{opacity:1}100%{opacity:0; transform:translateY(-18px)}}
+  .crux .molten-hi{transform-box:fill-box; animation:shimmer 3s ease-in-out infinite}
+  @keyframes shimmer{0%,100%{transform:translateX(0)}50%{transform:translateX(8px)}}
+  .crux .mouth{transform-box:fill-box; transform-origin:center}
+  .crux.speaking .mouth{animation:cruxtalk .22s ease-in-out infinite alternate}
+  @keyframes cruxtalk{from{transform:scaleY(.45)}to{transform:scaleY(1.5)}}
+  .crux-ring{position:fixed; z-index:79; border:2px solid var(--bench); border-radius:12px; pointer-events:none;
+    animation:cruxpulse 1.6s ease-out infinite; display:none}
+  @keyframes cruxpulse{0%{box-shadow:0 0 0 0 rgba(216,162,74,.45)}100%{box-shadow:0 0 0 14px transparent}}
+  @media(prefers-reduced-motion:reduce){.crux{animation:none}.crux-ring{animation:none}}
+  @media(max-width:760px){.crux-wrap{display:none!important}.crux-ring{display:none!important}}
+
   /* ---------- help + toast ---------- */
   .overlay{position:fixed; inset:0; z-index:60; background:rgba(10,11,16,.8); backdrop-filter:blur(5px);
     display:none; place-items:center; padding:20px}
@@ -305,6 +331,7 @@
       </div>
       <p class="thesis">Every lender's AI says <b>no</b>. Crucible shows the borrower the <b>path to yes</b>.</p>
       <div class="tools">
+        <button class="tbtn" id="tourBtn" title="Crucible walks the platform himself">◭ Tour <kbd>T</kbd></button>
         <button class="tbtn" id="demoBtn" title="Auto-play the pitch">▷ Demo <kbd>D</kbd></button>
         <button class="tbtn" id="exportBtn" title="Export compliance artifacts">⤓ Export <kbd>E</kbd></button>
         <button class="tbtn" id="soundBtn" title="Toggle sound">♪ <kbd>S</kbd></button>
@@ -416,7 +443,7 @@
     <!-- INSTRUMENTS -->
     <aside class="instruments">
       <p class="col-title">Instruments</p>
-      <div class="card inst">
+      <div class="card inst" id="routerCard">
         <h3>Router · cost on AMD</h3>
         <div class="savings" id="savePct">—<small>cheaper than all-frontier</small></div>
         <div class="cmp" id="cmp"></div>
@@ -449,6 +476,7 @@
     <div class="keys">
       <kbd>1</kbd><span>–<kbd>4</kbd> load a borrower</span>
       <kbd>R</kbd><span>convene the tribunal</span>
+      <kbd>T</kbd><span>Crucible tours the platform (voiced)</span>
       <kbd>D</kbd><span>auto-play the demo</span>
       <kbd>O</kbd><span>work the open conditions (outreach)</span>
       <kbd>A</kbd><span>submit to AUS</span>
@@ -459,6 +487,44 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
+
+<div class="crux-wrap" id="cruxWrap">
+  <div class="crux-bubble">
+    <div class="crux-tag">Crucible · live tour</div>
+    <p id="cruxText"></p>
+  </div>
+  <div class="crux" id="crux" title="Click to end the tour (T)">
+    <svg viewBox="0 0 120 120" width="82" height="82" aria-label="Crucible, the underwriting agent">
+      <defs>
+        <linearGradient id="cgV" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#2C3242"/><stop offset="1" stop-color="#171A24"/>
+        </linearGradient>
+        <linearGradient id="cgM" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#F7DFA0"/><stop offset=".5" stop-color="#F0C878"/><stop offset="1" stop-color="#E6A542"/>
+        </linearGradient>
+        <radialGradient id="cgGlow" cx=".5" cy=".4" r=".65">
+          <stop offset="0" stop-color="#F3C979" stop-opacity=".5"/><stop offset="1" stop-color="#F3C979" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <ellipse cx="60" cy="45" rx="42" ry="24" fill="url(#cgGlow)"/>
+      <circle class="ember e1" cx="46" cy="36" r="2.2" fill="#F3C979"/>
+      <circle class="ember e2" cx="63" cy="32" r="1.7" fill="#E5573F"/>
+      <circle class="ember e3" cx="75" cy="38" r="2" fill="#F0C878"/>
+      <path d="M25 52 q-9 5 -2 12" stroke="#D8A24A" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M95 52 q9 5 2 12" stroke="#D8A24A" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M26 46 C25 70 36 86 60 86 C84 86 95 70 94 46 Z" fill="url(#cgV)" stroke="#D8A24A" stroke-width="2"/>
+      <path d="M50 86 L47 93 H73 L70 86 Z" fill="#171A24" stroke="#D8A24A" stroke-width="1.5"/>
+      <ellipse cx="60" cy="96" rx="20" ry="4.5" fill="#171A24" stroke="#D8A24A" stroke-width="1.5"/>
+      <ellipse cx="60" cy="46" rx="34" ry="9" fill="#232838" stroke="#D8A24A" stroke-width="2"/>
+      <ellipse cx="60" cy="46" rx="28" ry="6.5" fill="url(#cgM)"/>
+      <ellipse class="molten-hi" cx="53" cy="45" rx="12" ry="2.6" fill="#F7DFA0" opacity=".85"/>
+      <g class="eye"><circle cx="46" cy="64" r="6.5" fill="#ECEAE1"/><circle cx="47.5" cy="65" r="3" fill="#0F1017"/><circle cx="44.6" cy="62" r="1.2" fill="#FFFFFF"/></g>
+      <g class="eye"><circle cx="74" cy="64" r="6.5" fill="#ECEAE1"/><circle cx="75.5" cy="65" r="3" fill="#0F1017"/><circle cx="72.6" cy="62" r="1.2" fill="#FFFFFF"/></g>
+      <path class="mouth" d="M52 76 Q60 82 68 76" stroke="#ECEAE1" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </svg>
+  </div>
+</div>
+<div class="crux-ring" id="cruxRing"></div>
 
 <script>
 "use strict";
@@ -1056,11 +1122,12 @@ document.addEventListener("keydown",e=>{
   if(k>="1"&&k<="4"){ const r=SF_RECORDS[+k-1]; if(r){ switchSource("salesforce"); loadRecord(r.loan,{name:r.borrower,meta:r.opportunity_id+" · Salesforce"}); run(); } }
   else if(k==="r")run();
   else if(k==="d")demo();
+  else if(k==="t")startTour();
   else if(k==="e")exportArtifacts();
   else if(k==="o")runOutreach();
   else if(k==="a")runAus();
   else if(k==="s")$("soundBtn").click();
-  else if(k==="escape")$("help").classList.remove("show");
+  else if(k==="escape"){ $("help").classList.remove("show"); if(tourOn)endTour(); }
   else if(k==="?")$("help").classList.add("show");
 });
 
@@ -1076,6 +1143,119 @@ document.addEventListener("keydown",e=>{
       cx.beginPath(); cx.arc(p.x,p.y,p.r,0,7); cx.fillStyle=`rgba(216,162,74,${p.o*.5})`; cx.fill(); });
     requestAnimationFrame(tick); })();
 })();
+
+// ---------------- Crucible: the in-console live tour ----------------
+let tourOn=false, tourGen=0, cruxVoice=null, bubbleTimer=null;
+function pickCruxVoice(){
+  const vs=speechSynthesis.getVoices();
+  const pref=["Andrew Online","Guy Online","Christopher Online","Eric Online","Roger Online",
+              "Google UK English Male","Andrew Multilingual","Brian Online","Aria Online","Google US English"];
+  for(const p of pref){ const v=vs.find(v=>v.name.includes(p)&&v.lang.startsWith("en")); if(v)return v; }
+  return vs.find(v=>v.lang==="en-US")||vs.find(v=>v.lang.startsWith("en"))||null;
+}
+if("speechSynthesis" in window){
+  speechSynthesis.onvoiceschanged=()=>{ cruxVoice=pickCruxVoice(); };
+  cruxVoice=pickCruxVoice();
+}
+function cruxStopVoice(){ try{speechSynthesis.cancel();}catch(e){} $("crux").classList.remove("speaking"); }
+function cruxSpeak(text){
+  return new Promise(res=>{
+    if(!("speechSynthesis" in window))return res();
+    try{
+      const u=new SpeechSynthesisUtterance(text.replace(/—/g,", ").replace(/·/g,", "));
+      if(!cruxVoice)cruxVoice=pickCruxVoice();
+      if(cruxVoice)u.voice=cruxVoice;
+      u.rate=1.03;
+      u.onstart=()=>$("crux").classList.add("speaking");
+      u.onend=()=>{ $("crux").classList.remove("speaking"); res(); };
+      u.onerror=()=>{ $("crux").classList.remove("speaking"); res(); };
+      speechSynthesis.speak(u);
+    }catch(e){ res(); }
+  });
+}
+function typeBubble(t){
+  clearInterval(bubbleTimer);
+  const p=$("cruxText");
+  if(REDUCED){ p.textContent=t; return; }
+  p.textContent=""; let i=0;
+  bubbleTimer=setInterval(()=>{ p.textContent=t.slice(0,++i); if(i>=t.length)clearInterval(bubbleTimer); },14);
+}
+function ringOn(sel){
+  const ring=$("cruxRing"), t=sel?document.querySelector(sel):null;
+  if(!t){ ring.style.display="none"; return; }
+  t.scrollIntoView({block:"center",behavior:"smooth"});
+  setTimeout(()=>{
+    const r=t.getBoundingClientRect();
+    ring.style.display="block";
+    ring.style.left=(r.left-6)+"px"; ring.style.top=(r.top-6)+"px";
+    ring.style.width=(r.width+12)+"px"; ring.style.height=(r.height+12)+"px";
+  },480);
+}
+async function waitUntil(cond,ms){
+  const t0=performance.now();
+  while(performance.now()-t0<ms){ if(cond())return true; await sleep(200); }
+  return false;
+}
+function buildTour(){
+  const live=(mode==="live");
+  const steps=[
+    {say:"Hey — I'm Crucible, your AI underwriting agent. This is my console. Let me underwrite a real file for you.", target:".masthead"},
+    {say:"These loans come straight out of Salesforce — live Opportunity records, not mock data.", target:"#sfrecs"},
+    {say:"James Okafor. Watch — the prosecution attacks, the defense answers each charge, and I rule on the cited record.", target:".chamber",
+     act:async()=>{
+       switchSource("salesforce");
+       const r=SF_RECORDS.find(x=>/JAMES/i.test(x.loan.loan_id))||SF_RECORDS[1]||SF_RECORDS[0];
+       loadRecord(r.loan,{name:r.borrower,meta:r.opportunity_id+" · Salesforce"});
+       run();
+       await waitUntil(()=>$("verdict").classList.contains("show"),30000);
+     }},
+    {say:"Path to yes — with my learned approval score, and every step cited to the actual guideline text.", target:"#verdict"},
+    {say:"Now the real work. This is the conditions report — the same shape a human underwriter produces, section by section.", target:"#condBoard"},
+  ];
+  if(live){
+    steps.push(
+      {say:"Incoming bank statement. I read it, run the math against the required funds, and clear the condition myself.", target:"#docLog",
+       act:async()=>{ await sendDocument(SAMPLE_DOCS.bank); await sleep(1200); }},
+      {say:"What documents can't clear, I go get — calls, texts, and emails, routed to the right humans on the file.", target:"#outreachList",
+       act:async()=>{ await runOutreach(); }},
+      {say:"Then straight down the AUS rails.", target:"#ausBox",
+       act:async()=>{ await runAus(); }},
+    );
+  }else{
+    steps.push({say:"Start my backend and I'll read documents, work the phones, and hit the AUS rails — live. For now, here's the board I'd be clearing.", target:"#condBoard"});
+  }
+  steps.push(
+    {say:"All of this ran mostly on an AMD Instinct MI300X — borrower data never left the box. Only the hardest reasoning went to Fireworks.", target:"#routerCard"},
+    {say:"And I learn from every single file — what clears, what funds, what flops.", target:"#learnCard"},
+    {say:"The black box says no. I work the file until it's a yes. I'm Crucible.", target:".masthead"},
+  );
+  return steps;
+}
+async function startTour(){
+  if(tourOn){ endTour(); return; }
+  tourOn=true;
+  const gen=++tourGen;
+  $("cruxWrap").classList.add("on");
+  for(const s of buildTour()){
+    if(gen!==tourGen)return;
+    typeBubble(s.say);
+    ringOn(s.target);
+    const speaking=cruxSpeak(s.say);
+    if(s.act){ try{ await s.act(); }catch(e){} }
+    await speaking;
+    if(gen!==tourGen)return;
+    await sleep(900);
+  }
+  endTour();
+}
+function endTour(){
+  tourOn=false; tourGen++;
+  cruxStopVoice(); clearInterval(bubbleTimer);
+  $("cruxWrap").classList.remove("on");
+  $("cruxRing").style.display="none";
+}
+$("tourBtn").onclick=startTour;
+$("crux").onclick=endTour;
 
 // ---------------- boot ----------------
 (async function(){

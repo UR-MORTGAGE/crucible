@@ -24,20 +24,22 @@ from pathlib import Path
 
 import httpx
 
-# Must match the deck's CRUX array, in slide order (12 slides).
+# Spoken-performance versions of the deck's CRUX lines (12 slides, same order).
+# Punctuation here is stage direction: ellipses = beats, question marks = lift,
+# short sentences = punch. ElevenLabs performs punctuation; don't flatten it.
 LINES = [
-    "Hey — I'm Crucible, your AI underwriting agent. I put loans on trial. Let me walk you through how I work.",
-    "This is the world I was built for: a black box that says no and hangs up. I hate it too.",
-    "So they made me argue with myself — in public. Prosecutor, defender, judge. If I can't cite it, I don't say it.",
-    "Enough slides — watch me work. A real file: the prosecution swings, the defense answers, I rule. Then I start clearing conditions myself.",
-    "A verdict is just my opening move. I write the conditions, read your documents, and clear them myself. And no — a nine hundred dollar statement does not clear a thirty-one thousand dollar condition.",
-    "My favorite trick. When a file dies, I rebuild the deal — buydown, product switch, whatever legally works. Paperwork included.",
-    "Every file teaches me something: what clears, what funds, what flops. I don't forget.",
-    "I live inside your stack, not on top of it. Salesforce in, Path-to-Yes back. Most files never need a human to open my console.",
-    "This is my house: an AMD Instinct MI300X. Borrower PII never leaves it — only the hardest thinking phones a friend at Fireworks.",
-    "I turn denials into fundings and write my own Reg-B paperwork. Compliance teams actually like me. That's rare.",
-    "Today I underwrite. Tomorrow I watch rates, shop investors, and work for the borrower. One engine — a platform.",
-    "The black box says no. I work the file until it's a yes. — Crucible",
+    "Hey... I'm Crucible — your A.I. underwriting agent. I put loans... on trial. Come on, let me show you how I work.",
+    "This is the world I was built for. A black box... that says no — and hangs up. Yeah... I hate it too.",
+    "So they made me argue with myself. In public. Prosecutor... defender... judge. And if I can't cite it? I don't say it.",
+    "Okay — enough slides. Watch me work. This is a real file. The prosecution swings... the defense answers... and I rule. And then? I start clearing conditions. Myself.",
+    "See, a verdict is just my opening move. I write the conditions... I read your documents... and I clear them myself. Oh, and no — a nine-hundred-dollar bank statement does not clear a thirty-one-thousand-dollar condition. Nice try.",
+    "Now this... this is my favorite trick. When a file dies? I rebuild the deal. A buydown... a product switch... whatever legally works. And the paperwork? Already written.",
+    "And every single file teaches me something. What clears... what funds... what flops. I don't forget.",
+    "Here's the thing — I live inside your stack... not on top of it. Salesforce in... path-to-yes back. Most files never need a human to open my console.",
+    "This is my house. An AMD Instinct... the M-I three hundred X. Borrower data never leaves it. Only the hardest thinking phones a friend... over at Fireworks.",
+    "I turn denials... into fundings. And I write my own Reg B paperwork. Compliance teams actually like me... that's rare.",
+    "Today? I underwrite. Tomorrow... I watch rates. I shop investors. I work for the borrower. One engine... a platform.",
+    "The black box says no. ... I work the file... until it's a yes. I'm Crucible.",
 ]
 
 DEFAULT_VOICE = "pNInz6obpgDQGcFmaJgB"  # ElevenLabs stock "Adam"
@@ -47,10 +49,16 @@ MARKER = "/*CRUX_AUDIO_SLOT*/"
 def tts(client: httpx.Client, api_key: str, voice_id: str, text: str) -> bytes:
     resp = client.post(
         f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
-        params={"output_format": "mp3_22050_32"},   # small files; fine for narration
+        params={"output_format": "mp3_44100_64"},
         headers={"xi-api-key": api_key},
-        json={"text": text, "model_id": "eleven_turbo_v2_5",
-              "voice_settings": {"stability": 0.45, "similarity_boost": 0.8}},
+        json={"text": text,
+              "model_id": "eleven_multilingual_v2",   # most expressive GA model
+              "voice_settings": {                       # performance, not narration
+                  "stability": 0.32,                    # low = more emotional range
+                  "similarity_boost": 0.75,
+                  "style": 0.45,                        # lean into delivery
+                  "use_speaker_boost": True,
+              }},
         timeout=60,
     )
     resp.raise_for_status()
