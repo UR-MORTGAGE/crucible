@@ -58,11 +58,13 @@ class DocumentUpload(BaseModel):
 
 
 @app.get("/", response_class=HTMLResponse)
-def home() -> str:
-    """The demo UI — the loan on trial."""
+def home() -> HTMLResponse:
+    """The demo UI — the loan on trial. no-store so UI edits show on plain refresh."""
     if UI_FILE.exists():
-        return UI_FILE.read_text(encoding="utf-8")
-    return "<h1>Crucible</h1><p>UI not found; POST /underwrite.</p>"
+        return HTMLResponse(UI_FILE.read_text(encoding="utf-8"),
+                            headers={"Cache-Control": "no-store"})
+    return HTMLResponse("<h1>Crucible</h1><p>UI not found; POST /underwrite.</p>",
+                        headers={"Cache-Control": "no-store"})
 
 
 @app.get("/health")

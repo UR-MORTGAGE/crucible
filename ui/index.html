@@ -1158,11 +1158,17 @@ if("speechSynthesis" in window){
   cruxVoice=pickCruxVoice();
 }
 function cruxStopVoice(){ try{speechSynthesis.cancel();}catch(e){} $("crux").classList.remove("speaking"); }
+function speakable(text){
+  return text.replace(/—/g,", ").replace(/·/g,", ")
+             .replace(/MI300X/g,"M-I three hundred X")
+             .replace(/\bAUS\b/g,"A-U-S")
+             .replace(/\bPII\b/g,"P-I-I");
+}
 function cruxSpeak(text){
   return new Promise(res=>{
     if(!("speechSynthesis" in window))return res();
     try{
-      const u=new SpeechSynthesisUtterance(text.replace(/—/g,", ").replace(/·/g,", "));
+      const u=new SpeechSynthesisUtterance(speakable(text));
       if(!cruxVoice)cruxVoice=pickCruxVoice();
       if(cruxVoice)u.voice=cruxVoice;
       u.rate=1.03;
@@ -1208,7 +1214,8 @@ function buildTour(){
   const live=(mode==="live");
   const steps=[
     {say:"Hey — I'm Crucible, your AI underwriting agent. This is my console. Let me underwrite a real file for you.", target:".masthead"},
-    {say:"These loans come straight out of Salesforce — live Opportunity records, not mock data.", target:"#sfrecs"},
+    {say:"These loans come straight out of Salesforce — live Opportunity records, not mock data.",
+     spoken:"These loans come straight out of Salesforce. Real Opportunity records, pulled in real time — not mock data.", target:"#sfrecs"},
     {say:"James Okafor. Watch — the prosecution attacks, the defense answers each charge, and I rule on the cited record.", target:".chamber",
      act:async()=>{
        switchSource("salesforce");
@@ -1223,6 +1230,7 @@ function buildTour(){
   if(live){
     steps.push(
       {say:"Incoming bank statement. I read it, run the math against the required funds, and clear the condition myself.", target:"#docLog",
+       spoken:"Incoming bank statement. I reed it, run the math against the required funds, and clear the condition myself.",
        act:async()=>{ await sendDocument(SAMPLE_DOCS.bank); await sleep(1200); }},
       {say:"What documents can't clear, I go get — calls, texts, and emails, routed to the right humans on the file.", target:"#outreachList",
        act:async()=>{ await runOutreach(); }},
@@ -1251,7 +1259,7 @@ async function startTour(){
     if(gen!==tourGen)return;
     typeBubble(s.say);
     ringOn(s.target);
-    const speaking=cruxSpeak(s.say);
+    const speaking=cruxSpeak(s.spoken||s.say);
     if(s.act){
       try{ await s.act(); }catch(e){}
       if(ringTarget)ringTarget.scrollIntoView({block:"center",behavior:"smooth"});  // re-center now that content exists
