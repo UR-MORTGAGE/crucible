@@ -1180,16 +1180,24 @@ function typeBubble(t){
   p.textContent=""; let i=0;
   bubbleTimer=setInterval(()=>{ p.textContent=t.slice(0,++i); if(i>=t.length)clearInterval(bubbleTimer); },14);
 }
-function ringOn(sel){
-  const ring=$("cruxRing"), t=sel?document.querySelector(sel):null;
-  if(!t){ ring.style.display="none"; return; }
-  t.scrollIntoView({block:"center",behavior:"smooth"});
-  setTimeout(()=>{
-    const r=t.getBoundingClientRect();
+let ringTarget=null, ringRAF=null;
+function ringTrack(){
+  const ring=$("cruxRing");
+  if(!ringTarget){ ring.style.display="none"; ringRAF=null; return; }
+  const r=ringTarget.getBoundingClientRect(), vh=innerHeight;
+  const top=Math.max(r.top,8), bottom=Math.min(r.bottom,vh-8);   // clamp to viewport
+  if(bottom<top+10||r.width<4){ ring.style.display="none"; }
+  else{
     ring.style.display="block";
-    ring.style.left=(r.left-6)+"px"; ring.style.top=(r.top-6)+"px";
-    ring.style.width=(r.width+12)+"px"; ring.style.height=(r.height+12)+"px";
-  },480);
+    ring.style.left=(r.left-6)+"px"; ring.style.top=(top-6)+"px";
+    ring.style.width=(r.width+12)+"px"; ring.style.height=(bottom-top+12)+"px";
+  }
+  ringRAF=requestAnimationFrame(ringTrack);
+}
+function ringOn(sel){
+  ringTarget=sel?document.querySelector(sel):null;
+  if(ringTarget)ringTarget.scrollIntoView({block:"center",behavior:"smooth"});
+  if(!ringRAF)ringRAF=requestAnimationFrame(ringTrack);   // tracks scroll + growing content
 }
 async function waitUntil(cond,ms){
   const t0=performance.now();
@@ -1225,6 +1233,9 @@ function buildTour(){
     steps.push({say:"Start my backend and I'll read documents, work the phones, and hit the AUS rails — live. For now, here's the board I'd be clearing.", target:"#condBoard"});
   }
   steps.push(
+    {say:"And clock what just happened. A full underwrite in seconds — not days. Conditions worked in minutes — not weeks of phone tag. At ten thousand loans a month, that's an ops floor that never sleeps, with an audit trail on every single decision.", target:"#wfCount"},
+  );
+  steps.push(
     {say:"All of this ran mostly on an AMD Instinct MI300X — borrower data never left the box. Only the hardest reasoning went to Fireworks.", target:"#routerCard"},
     {say:"And I learn from every single file — what clears, what funds, what flops.", target:"#learnCard"},
     {say:"The black box says no. I work the file until it's a yes. I'm Crucible.", target:".masthead"},
@@ -1241,7 +1252,10 @@ async function startTour(){
     typeBubble(s.say);
     ringOn(s.target);
     const speaking=cruxSpeak(s.say);
-    if(s.act){ try{ await s.act(); }catch(e){} }
+    if(s.act){
+      try{ await s.act(); }catch(e){}
+      if(ringTarget)ringTarget.scrollIntoView({block:"center",behavior:"smooth"});  // re-center now that content exists
+    }
     await speaking;
     if(gen!==tourGen)return;
     await sleep(900);
@@ -1251,6 +1265,7 @@ async function startTour(){
 function endTour(){
   tourOn=false; tourGen++;
   cruxStopVoice(); clearInterval(bubbleTimer);
+  ringTarget=null;
   $("cruxWrap").classList.remove("on");
   $("cruxRing").style.display="none";
 }
