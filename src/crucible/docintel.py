@@ -25,6 +25,7 @@ CLEARS: dict[str, list[str]] = {
     "counseling_disclosure": ["0408"],
     "h3_disclosure": ["0426"],
     "ssp_list": ["0465"],
+    "voe": ["0299"],
 }
 
 _KEYWORDS: list[tuple[str, tuple[str, ...]]] = [
@@ -38,6 +39,7 @@ _KEYWORDS: list[tuple[str, tuple[str, ...]]] = [
     ("counseling_disclosure", ("homeownership counseling", "counseling agencies")),
     ("h3_disclosure", ("credit score disclosure", "notice to home loan applicant", "h-3")),
     ("ssp_list", ("settlement service provider", "provider list")),
+    ("voe", ("verbal verification of employment", "verification of employment", "employer confirmed", "vvoe")),
 ]
 
 

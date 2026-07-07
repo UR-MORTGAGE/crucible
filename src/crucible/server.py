@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 from pathlib import Path
 
@@ -70,7 +71,10 @@ def home() -> HTMLResponse:
 @app.get("/health")
 def health() -> dict:
     cfg = load_config()
-    return {"status": "ok", "mode": cfg.mode}
+    return {"status": "ok", "mode": cfg.mode,
+            "guideline_corpus_passages": rag.corpus_size(),
+            "files_underwritten": LEARN.n,
+            "active_workfiles": len(WORKFILES)}
 
 
 @app.get("/scenarios")
@@ -159,6 +163,32 @@ def submit_aus(loan_id: str) -> dict:
     result = aus.submit(wf["loan"])
     wf["aus"] = result
     return result
+
+
+@app.get("/workfile/{loan_id}/audit_pack")
+def audit_pack(loan_id: str) -> dict:
+    """The complete, tamper-evident decision trail for one file: the loan as
+    received, every charge/remedy/citation, the verdict, the conditions report,
+    each document read and what it cleared, outreach dispatched, the AUS
+    submission, routing telemetry, and the learning snapshot — hashed so any
+    later edit is detectable. This is the artifact a QC team or regulator gets."""
+    wf = _workfile(loan_id)
+    pack = {
+        "artifact": "crucible_audit_pack",
+        "version": "1.0",
+        "loan_id": loan_id,
+        "loan_as_received": wf["loan"].model_dump(),
+        "result": wf["result"].model_dump(),
+        "documents_processed": wf["documents"],
+        "outreach": wf["outreach"],
+        "aus_submission": wf["aus"],
+        "learning_snapshot": LEARN.summary(),
+        "guideline_corpus_passages": rag.corpus_size(),
+    }
+    digest = hashlib.sha256(
+        json.dumps(pack, sort_keys=True, default=str).encode("utf-8")).hexdigest()
+    pack["integrity_sha256"] = digest
+    return pack
 
 
 @app.get("/learning")

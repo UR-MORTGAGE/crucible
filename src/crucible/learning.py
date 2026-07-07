@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import math
+import threading
 from pathlib import Path
 
 from .schemas import LoanFile, Projected
@@ -42,6 +43,7 @@ class LearningStore:
         self.n = 0
         self.move_stats: dict[str, list[int]] = {}       # action -> [successes, total]
         self.clearance_stats: dict[str, dict] = {}       # cond code -> {count, by_doc: {doc_type: n}}
+        self._lock = threading.Lock()                    # streams run on worker threads
         self._load()
 
     # ---- persistence (best-effort; never crash the request) ----
@@ -74,22 +76,24 @@ class LearningStore:
 
     # ---- learning ----
     def record(self, loan: LoanFile, m: Projected, approved: bool, lr: float = 0.05) -> None:
-        f = _features(loan, m)
-        pred = self.score(loan, m)
-        err = (1.0 if approved else 0.0) - pred          # perceptron/logistic delta
-        for k in self.weights:
-            self.weights[k] += lr * err * f[k]
-        self.bias += lr * err
-        self.n += 1
-        self._save()
+        with self._lock:
+            f = _features(loan, m)
+            pred = self.score(loan, m)
+            err = (1.0 if approved else 0.0) - pred      # perceptron/logistic delta
+            for k in self.weights:
+                self.weights[k] += lr * err * f[k]
+            self.bias += lr * err
+            self.n += 1
+            self._save()
 
     def record_moves(self, actions: list[str], success: bool) -> None:
-        for a in actions:
-            s = self.move_stats.setdefault(a, [0, 0])
-            s[1] += 1
-            if success:
-                s[0] += 1
-        self._save()
+        with self._lock:
+            for a in actions:
+                s = self.move_stats.setdefault(a, [0, 0])
+                s[1] += 1
+                if success:
+                    s[0] += 1
+            self._save()
 
     def move_success_rate(self, action: str) -> float:
         s = self.move_stats.get(action)
@@ -100,10 +104,11 @@ class LearningStore:
     def record_clearance(self, code: str, doc_type: str) -> None:
         """A condition cleared by a document — the agent learns which docs
         clear which conditions, sharpening future outreach + doc requests."""
-        s = self.clearance_stats.setdefault(code, {"count": 0, "by_doc": {}})
-        s["count"] += 1
-        s["by_doc"][doc_type] = s["by_doc"].get(doc_type, 0) + 1
-        self._save()
+        with self._lock:
+            s = self.clearance_stats.setdefault(code, {"count": 0, "by_doc": {}})
+            s["count"] += 1
+            s["by_doc"][doc_type] = s["by_doc"].get(doc_type, 0) + 1
+            self._save()
 
     def summary(self) -> dict:
         return {

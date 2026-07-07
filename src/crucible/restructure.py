@@ -11,6 +11,7 @@ import math
 from typing import Callable, Optional
 
 from .core import evaluate
+from .learning import STORE as LEARN
 from .retrieval.guidelines import PROGRAM_RULES
 from .schemas import LoanFile, RestructureMove, RestructurePlan
 
@@ -118,7 +119,10 @@ def solve(loan: LoanFile, max_moves: int = 2) -> RestructurePlan:
         if res.decision_state != "not_yet":
             eff = sum(_EFFORT_W[mv.effort] for mv, _ in combo)
             bonus = 0 if res.decision_state == "fundable_now" else 1
-            key = (eff + bonus, len(combo))
+            # learned tie-break: among equal-effort plans, prefer the moves
+            # that have historically converted (the loop learning.py feeds)
+            learned = sum(LEARN.move_success_rate(mv.action) for mv, _ in combo) / len(combo)
+            key = (eff + bonus, len(combo), -learned)
             if best is None or key < best[0]:
                 best = (key, [mv for mv, _ in combo], trial, res)
 

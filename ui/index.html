@@ -424,6 +424,7 @@
               <button data-s="hoi">📄 HOI declarations</button>
               <button data-s="lox">📄 Borrower LOX</button>
               <button data-s="title">📄 Title report</button>
+              <button data-s="voe">📄 VVOE</button>
             </div>
             <div class="wlog" id="docLog"></div>
           </div>
@@ -432,6 +433,7 @@
             <div style="display:flex; gap:8px; flex-wrap:wrap">
               <button class="wbtn" id="outreachBtn">☎ Work the open conditions</button>
               <button class="wbtn" id="ausBtn">⇪ Submit to AUS</button>
+              <button class="wbtn" id="auditBtn" title="Download the complete tamper-evident decision trail">⬇ Audit pack</button>
             </div>
             <div class="ausline" id="ausBox" hidden></div>
             <div id="outreachList"></div>
@@ -877,6 +879,7 @@ const SAMPLE_DOCS={
   hoi:{filename:"hoi_declarations.pdf",text:"Homeowners Insurance Declarations. Policy period 12 months. Dwelling coverage: $405,000.00"},
   lox:{filename:"borrower_lox.pdf",text:"Letter of Explanation. To whom it may concern: the credit inquiry from UNITED WHOLE was for this mortgage application; no new credit was obtained."},
   title:{filename:"title_report.pdf",text:"Title Commitment — Schedule B. Lien search complete. No open judgments of record. Clear title."},
+  voe:{filename:"vvoe_employer.pdf",text:"Verbal Verification of Employment. Employer confirmed the borrower's active full-time employment, position, and start date by phone. VVOE completed."},
 };
 
 async function sendDocument(doc){
@@ -934,6 +937,17 @@ async function runAus(){
   $("ausBtn").disabled=false;
 }
 
+async function downloadAuditPack(){
+  if(!currentLoanId||mode!=="live"){toast("Backend offline — the audit pack needs the live server.");return;}
+  try{
+    const r=await fetch(`/workfile/${encodeURIComponent(currentLoanId)}/audit_pack`);
+    if(!r.ok)throw new Error(r.status===404?"underwrite the file first":"HTTP "+r.status);
+    const pack=await r.json();
+    download(`${currentLoanId}_audit_pack.json`,JSON.stringify(pack,null,2));
+    toast(`Audit pack sealed — SHA-256 ${pack.integrity_sha256.slice(0,12)}… covers the full decision trail.`);
+  }catch(e){toast("Audit pack: "+e.message);}
+}
+
 async function refreshLearning(){
   try{
     const l=await(await fetch("/learning")).json();
@@ -957,7 +971,7 @@ function offlineConditions(L){
     add("0064","TRAC","Title","Title (TRAC+): TRAC Curative Team to obtain payoff for the judgment lien on title.");
   }
   if(L.loan_program==="conventional")add("7015","TRAC","Property","Property (Conv): TRAC Team to provide UWM-approved title summary with chain of title and tax verification.");
-  const total=Math.max(L.property_value-L.loan_amount,0)+0.03*L.loan_amount;
+  const total=(purchase?Math.max(L.property_value-L.loan_amount,0):0)+0.03*L.loan_amount;
   if(L.reserves_liquid<total)add("7086","Underwriter II (PTD)","Assets",
     `Assets: Short funds to close. Total funds required are $${total.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}. $${L.reserves_liquid.toLocaleString()} currently verified.`);
   add("5767","Underwriter II (PTD)","Credit","Credit: Letter of explanation from borrower(s) for credit inquiries.");
@@ -971,6 +985,7 @@ function offlineConditions(L){
   add("0426","Disclosures/Compliance (PTD)","Disclosure","Disclosure: H-3 model credit score disclosure.");
   add("0465","Disclosures/Compliance (PTD)","Disclosure","Disclosure: Settlement Service Provider List matching Block C of the LE.");
   if((L.state||"TN").toUpperCase()==="TN")add("0443","Disclosures/Compliance (PTD)","Disclosure","Disclosure: TN — MLO and company license numbers disclosed on the 1003.");
+  add("0299","Underwriter To Obtain And Clear","Employment","Employment: Verbal verification of employment for each borrower within 10 business days prior to the Note date.");
   return conds;
 }
 
@@ -1108,6 +1123,7 @@ $("file").addEventListener("change",e=>{ if(e.target.files[0])handleFile(e.targe
 $("sampleLink").onclick=e=>{ e.preventDefault(); download("sample_loan_1003.json",JSON.stringify(DEFAULT_LOAN,null,2)); toast("Sample loan file downloaded — drop it back in."); };
 $("outreachBtn").onclick=runOutreach;
 $("ausBtn").onclick=runAus;
+$("auditBtn").onclick=downloadAuditPack;
 $("samples").addEventListener("click",e=>{ const b=e.target.closest("button"); if(b&&!b.disabled)sendDocument(SAMPLE_DOCS[b.dataset.s]); });
 $("docFile").addEventListener("change",e=>{ const f=e.target.files[0]; if(f)readDocFile(f); e.target.value=""; });
 (function(){ const d=$("docDrop");

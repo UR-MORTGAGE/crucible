@@ -24,7 +24,9 @@ def _funds_to_close(loan: LoanFile) -> tuple[float, float, float]:
     if loan.funds_to_close and loan.funds_to_close > 0:
         total = loan.funds_to_close
     else:
-        down = max(loan.property_value - loan.loan_amount, 0)
+        # A down payment is owed on purchases only — a refi's funds to close
+        # are closing costs (equity is not cash the borrower must bring).
+        down = max(loan.property_value - loan.loan_amount, 0) if loan.loan_purpose == "purchase" else 0.0
         closing = 0.03 * loan.loan_amount
         total = round(down + closing, 2)
     verified = loan.reserves_liquid
@@ -104,7 +106,12 @@ def generate_conditions(loan: LoanFile, m: Projected, findings: list[Finding],
         add("0443", "Disclosures/Compliance (PTD)", "Disclosure",
             "Disclosure: TN — the state license number held by the MLO and the MLO's company must be disclosed on the 1003.")
 
-    # ---- Underwriter To Obtain And Clear — COCs the restructure requires ----
+    # ---- Underwriter To Obtain And Clear ----
+    add("0299", "Underwriter To Obtain And Clear", "Employment",
+        "Employment: Verbal verification of employment for each borrower to be completed within 10 business days prior to the Note date.",
+        prior_to="funding")
+
+    # COCs the restructure requires
     if restructure and restructure.needed:
         for mv in restructure.moves:
             if mv.coc:

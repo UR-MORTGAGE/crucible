@@ -24,6 +24,7 @@ _ROUTE: list[tuple[str, str, str]] = [
     ("Borrower", "borrower", "sms"),
     ("TC", "closing_team", "email"),
     ("Property", "trac_team", "email"),
+    ("Employment", "broker", "email"),
 ]
 
 _CONTACT_FIELD = {

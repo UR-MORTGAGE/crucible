@@ -121,3 +121,46 @@ def test_learning_accumulates():
     r = client.get("/learning").json()
     assert r["files_underwritten"] > 0
     assert r["condition_clearances"].get("7086", {}).get("count", 0) >= 1
+
+
+# ---- niche services: VVOE, refi funds math, audit pack --------------------------
+def test_vvoe_condition_generated_and_cleared_by_voe_doc():
+    loan = {**_loan("easy_yes"), "loan_id": "VVOE-1"}
+    r = client.post("/underwrite", json={"loan": loan}).json()
+    vvoe = [c for c in r["conditions"] if c["code"] == "0299"]
+    assert vvoe and vvoe[0]["section"] == "Underwriter To Obtain And Clear"
+    assert vvoe[0]["prior_to"] == "funding"
+
+    rep = client.post("/workfile/VVOE-1/documents", json={
+        "filename": "vvoe.pdf",
+        "text": "Verbal Verification of Employment. Employer confirmed active employment. VVOE completed.",
+    }).json()
+    assert rep["doc_type"] == "voe"
+    assert any(c["code"] == "0299" for c in rep["cleared"])
+
+
+def test_refi_funds_to_close_excludes_equity():
+    # A refi must not be billed the "down payment" (equity is not cash to bring).
+    loan = {**_loan("easy_yes"), "loan_id": "REFI-FUNDS-1",
+            "loan_purpose": "refi_rate_term", "reserves_liquid": 1000.0}
+    r = client.post("/underwrite", json={"loan": loan}).json()
+    funds = [c for c in r["conditions"] if c["code"] == "7086"]
+    assert funds, "short-funds condition expected with $1k verified"
+    import re
+    need = float(re.search(r"Total funds required are \$([\d,]+\.\d{2})",
+                           funds[0]["description"]).group(1).replace(",", ""))
+    assert need <= 0.05 * loan["loan_amount"], f"refi funds ${need:,.0f} should be closing costs, not equity"
+
+
+def test_audit_pack_is_complete_and_tamper_evident():
+    loan = {**_loan("needs_steps"), "loan_id": "AUDIT-1"}
+    client.post("/underwrite", json={"loan": loan})
+    client.post("/workfile/AUDIT-1/outreach")
+    client.post("/workfile/AUDIT-1/aus")
+    pack = client.get("/workfile/AUDIT-1/audit_pack").json()
+    for key in ("loan_as_received", "result", "documents_processed",
+                "outreach", "aus_submission", "learning_snapshot", "integrity_sha256"):
+        assert key in pack, key
+    assert pack["outreach"], "outreach trail should be in the pack"
+    assert pack["aus_submission"]["engine"] == "crucible_simulated"
+    assert len(pack["integrity_sha256"]) == 64
