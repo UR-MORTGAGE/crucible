@@ -1,6 +1,0 @@
-C:\Users\Ur Mortgage\crucible\scripts\serve.py:6: SyntaxWarning: "\." is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\."? A raw string is also an option.
-  .\.venv\Scripts\python.exe scripts\serve.py
-INFO:     Started server process [20092]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)

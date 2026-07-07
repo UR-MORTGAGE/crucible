@@ -1,3 +1,0 @@
-Crucible -> http://127.0.0.1:8000  (Ctrl+C to stop)
-INFO:     127.0.0.1:44185 - "GET /health HTTP/1.1" 200 OK
-INFO:     209.124.50.23:0 - "GET /health HTTP/1.1" 200 OK
