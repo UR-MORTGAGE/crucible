@@ -180,7 +180,17 @@ def guidelines_search(q: str, k: int = 3) -> dict:
 async def underwrite_stream(req: UnderwriteRequest) -> StreamingResponse:
     """Server-sent events: the proceeding streams in, event by event."""
     async def gen():
-        for event, payload in iter_crucible_events(req.loan):
+        # iter_crucible_events is a sync generator doing the real work
+        # (retrieval, agents, LLM calls). Pull each step on a worker thread —
+        # a blocked event loop stops even TCP accepts, which surfaces as a
+        # 502 at the tunnel for every visitor.
+        it = iter_crucible_events(req.loan)
+        _end = object()
+        while True:
+            step = await asyncio.to_thread(next, it, _end)
+            if step is _end:
+                break
+            event, payload = step
             if event == "done":  # capture the workfile so the agentic endpoints can act on it
                 try:
                     _store_workfile(req.loan, PathToYes(**payload))
