@@ -58,7 +58,7 @@ FastAPI · Python · Salesforce · Twilio · Docker
 | Field | Value | Status |
 |---|---|---|
 | Public GitHub repo | https://github.com/UR-MORTGAGE/crucible *(flip to **public** before submitting: `gh repo edit UR-MORTGAGE/crucible --visibility public`)* | ✅ pushed (private until submit day) |
-| Demo URL (interim, live NOW) | https://wishlist-progressive-mobility-bell.trycloudflare.com *(tunnel → local box; only up while serve.py + cloudflared run)* | ✅ live |
+| Demo URL (interim, live NOW) | https://steal-requesting-scanner-related.trycloudflare.com *(tunnel → local box; only up while serve.py + cloudflared run)* | ✅ live |
 | Demo URL (final) | `http://<AMD-instance-ip>:8080` from `deploy/amd_deploy.sh` — swap in after MI300X deploy | ⏳ |
 | Video | YouTube (unlisted) — record the console tour (press **T**), ~2.5 min | ⏳ record after live deploy |
 | Slide deck | Export/print the deck artifact to PDF + attach; live link optional | ⏳ export |

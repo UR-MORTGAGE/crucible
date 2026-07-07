@@ -8,7 +8,9 @@
 
 Team: **Milad + Joseph** · Build window: **Jul 6 → 11, 2026** · Deadline: **Jul 11, 15:00 UTC**
 
-**→ Full capability outline: [CAPABILITIES.md](CAPABILITIES.md)** · integration plan: [INTEGRATION.md](INTEGRATION.md) · roadmap: [ROADMAP.md](ROADMAP.md)
+**🔴 LIVE DEMO: https://steal-requesting-scanner-related.trycloudflare.com** — press **T** and Crucible gives you the guided tour himself.
+
+**→ Full capability outline: [CAPABILITIES.md](CAPABILITIES.md)** · integration plan: [INTEGRATION.md](INTEGRATION.md) · roadmap: [ROADMAP.md](ROADMAP.md) · submission: [SUBMISSION.md](SUBMISSION.md)
 
 ---
 
