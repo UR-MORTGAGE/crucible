@@ -61,7 +61,7 @@ FastAPI · Python · Salesforce · Twilio · Docker
 | Demo URL (interim, live NOW) | https://steal-requesting-scanner-related.trycloudflare.com *(tunnel → local box; only up while serve.py + cloudflared run)* | ✅ live |
 | Demo URL (final) | `http://<AMD-instance-ip>:8080` from `deploy/amd_deploy.sh` — swap in after MI300X deploy | ⏳ |
 | Video | ✅ recorded Jul 7 (take 2, 2:04, judge-friendly narration): `Videos\Screen Recordings\Crucible - Autonomous AI Underwriter (AMD Hackathon Demo).mp4` — upload to YouTube **unlisted**, paste link | ⏳ upload |
-| Slide deck | Export/print the deck artifact to PDF + attach; live link optional | ⏳ export |
+| Slide deck | ✅ `Crucible-Deck.pdf` (repo root, 12 pages, 16:9) — upload to the form's Slide Presentation field | ✅ exported |
 
 ## Cover image
 Screenshot the dedicated cover stage (1920×1080, 3D tribunal cards + crucible +
