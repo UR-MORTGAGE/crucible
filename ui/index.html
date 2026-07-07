@@ -1213,7 +1213,7 @@ async function waitUntil(cond,ms){
 function buildTour(){
   const live=(mode==="live");
   const steps=[
-    {say:"Hey — I'm Crucible, your AI underwriting agent. This is my console. Let me underwrite a real file for you.", target:".masthead"},
+    {say:"Hey — I'm Crucible, your AI underwriting agent. Underwriting is the decision behind every mortgage — is this loan safe to fund? Banks take days to answer that. Watch me do it live.", target:".masthead"},
     {say:"These loans come straight out of Salesforce — live Opportunity records, not mock data.",
      spoken:"These loans come straight out of Salesforce. Real Opportunity records, pulled in real time — not mock data.", target:"#sfrecs"},
     {say:"James Okafor. Watch — the prosecution attacks, the defense answers each charge, and I rule on the cited record.", target:".chamber",
@@ -1225,7 +1225,7 @@ function buildTour(){
        await waitUntil(()=>$("verdict").classList.contains("show"),30000);
      }},
     {say:"Path to yes — with my learned approval score, and every step cited to the actual guideline text.", target:"#verdict"},
-    {say:"Now the real work. This is the conditions report — the same shape a human underwriter produces, section by section.", target:"#condBoard"},
+    {say:"Now the real work. This is the conditions report — every document and fix this loan still needs before money can move. Same sections, same codes a human underwriter writes.", target:"#condBoard"},
   ];
   if(live){
     steps.push(
@@ -1234,11 +1234,11 @@ function buildTour(){
        act:async()=>{ await sendDocument(SAMPLE_DOCS.bank); await sleep(1200); }},
       {say:"What documents can't clear, I go get — calls, texts, and emails, routed to the right humans on the file.", target:"#outreachList",
        act:async()=>{ await runOutreach(); }},
-      {say:"Then straight down the AUS rails.", target:"#ausBox",
+      {say:"Then I submit straight to AUS — the automated approval engines run by Fannie Mae and Freddie Mac. Every mortgage in America rides these rails.", target:"#ausBox",
        act:async()=>{ await runAus(); }},
     );
   }else{
-    steps.push({say:"Start my backend and I'll read documents, work the phones, and hit the AUS rails — live. For now, here's the board I'd be clearing.", target:"#condBoard"});
+    steps.push({say:"Start my backend and I'll read documents, work the phones, and submit to AUS — Fannie and Freddie's automated approval engines — live. For now, here's the board I'd be clearing.", target:"#condBoard"});
   }
   steps.push(
     {say:"And clock what just happened. A full underwrite in seconds — not days. Conditions worked in minutes — not weeks of phone tag. At ten thousand loans a month, that's an ops floor that never sleeps, with an audit trail on every single decision.", target:"#wfCount"},
