@@ -36,7 +36,8 @@ class LoanFile(BaseModel):
     # optional context — drives conditions; safe defaults keep old files valid
     loan_purpose: str = "purchase"               # purchase | refi_rate_term | refi_cash_out
     cash_out_amount: float = 0.0
-    has_temp_buydown: bool = False
+    term_months: int = 360                       # 360 default => already maximally extended
+    has_temp_buydown: bool = False               # affordability only; see restructure.buydown_note
     state: str = "TN"
     funds_to_close: float = 0.0                  # 0 => estimate from down payment + costs
     credit_inquiries: int = 1

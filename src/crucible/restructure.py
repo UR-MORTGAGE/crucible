@@ -85,16 +85,53 @@ def _candidates(loan: LoanFile) -> list[tuple[RestructureMove, Callable[[LoanFil
             lambda L, t=target_res: L.model_copy(update={"reserves_liquid": t}),
         ))
 
-    # 6. Temporary buydown to lower the qualifying payment (~12% year-1)
-    if dti > r["max_dti"] and housing > 0:
-        new_housing = round(housing * 0.88, 2)
+    # 6. Extend the amortisation term to lower the qualifying payment.
+    #
+    # THIS REPLACES A TEMPORARY-BUYDOWN MOVE THAT DID NOT WORK. The previous
+    # version modelled a 2-1 buydown as cutting the qualifying payment ~12% and
+    # used it to clear DTI. That is wrong on every agency product: Fannie,
+    # Freddie, and FHA all qualify the borrower at the NOTE rate, so a buydown
+    # lowers what the borrower PAYS in years one and two and changes the
+    # qualifying ratio by exactly nothing. A solver that "cleared" a file that
+    # way produced a plan an underwriter would reject on sight — worse than
+    # returning no plan, because someone would work it.
+    #
+    # A term extension is the move that actually does what the buydown was
+    # being asked to do: it lowers the note-rate payment itself.
+    term = int(getattr(loan, "term_months", 0) or 0)
+    if dti > r["max_dti"] and housing > 0 and 0 < term < 360:
+        # Payment scales roughly with the annuity factor; extending 15y -> 30y
+        # cuts the P&I materially. Modelled conservatively at the ratio of terms
+        # rather than a precise re-amortisation, because the note rate for the
+        # longer term is not known here.
+        factor = max(0.62, term / 360.0)
+        new_housing = round(housing * factor, 2)
         out.append((
-            RestructureMove(action="Add a 2-1 temporary buydown (lowers qualifying payment)", field="proposed_housing_payment",
-                            from_value=_money(housing), to_value=_money(new_housing), effort="low"),
-            lambda L, h=new_housing: L.model_copy(update={"proposed_housing_payment": h, "has_temp_buydown": True}),
+            RestructureMove(action=f"Extend the amortisation term from {term} to 360 months",
+                            field="term_months", from_value=str(term), to_value="360",
+                            effort="low", coc=True),
+            lambda L, h=new_housing: L.model_copy(
+                update={"proposed_housing_payment": h, "term_months": 360}),
         ))
 
     return out
+
+
+# A temporary buydown remains a REAL and useful option — it eases payment shock
+# and is often seller-funded — but it belongs in borrower-affordability advice,
+# never in the DTI solver. Exposed separately so the distinction survives the
+# next person who reads this file.
+def buydown_note(loan: LoanFile) -> dict:
+    """Advisory only: what a temporary buydown does and does not do."""
+    return {
+        "available": True,
+        "changes_qualifying_ratios": False,
+        "why": ("A temporary buydown reduces the borrower's payment in the early years. "
+                "It does NOT reduce the qualifying payment or the DTI on agency loans — "
+                "Fannie Mae, Freddie Mac, and FHA all qualify at the note rate. Use it to "
+                "address payment shock or affordability, not to solve a ratio."),
+        "triggers_condition": "3308 — Temporary Buydown Agreement executed by all parties",
+    }
 
 
 def solve(loan: LoanFile, max_moves: int = 2) -> RestructurePlan:
